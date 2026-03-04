@@ -1,13 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import timeFun from "../Containers_/timeFun";
-import { useSelector } from "react-redux";
+import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
 
 const PreviewNorContainer4A = ({ newsId, version = 1, showSeparator = false }) => {
   const navigate = useNavigate();
-  const { allNews = [], translatedNews = [], language } = useSelector(
-    (state) => state.newsform || {}
-  );
+  const { allNews, translatedNews, language } = useSiteData();
   const newsSource = language === "en" ? translatedNews : allNews;
   const news = newsSource.find((n) => n.id === newsId);
 

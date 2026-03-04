@@ -15,6 +15,11 @@ export const updateNews = async (id, payload) => {
   return response.data;
 };
 
+export const addNewsComment = async (id, comment) => {
+  const response = await api.post(`/news/${id}/comments`, { comment });
+  return response.data;
+};
+
 export const deleteNews = async (id) => {
   const response = await api.delete(`/news/${id}`);
   return response.data;

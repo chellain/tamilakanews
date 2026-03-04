@@ -1,5 +1,4 @@
-import React, { useState, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useState, useMemo, useEffect } from "react";
 
 import luffy from "../../assets/luffy.webp";
 import newsimg from "../../assets/newsimg.avif";
@@ -24,7 +23,7 @@ import timeFun from "../Newspaper/Containers_/timeFun";
 import AdBox from '../Newspaper/Components/AdBox';
 import Newsheader from '../Newspaper/Components/Newsheader';
 import Line from "../Newspaper/Components/Line";
-import { useEffect } from "react";
+import { useSiteData } from "../../context/SiteDataContext";
 import { RxFontSize } from "react-icons/rx";
 import { BiFontSize } from "react-icons/bi";
 import {
@@ -38,14 +37,19 @@ import { FaXTwitter } from "react-icons/fa6";
 import BigNewsContainer4B from "../Newspaper/Containers_/BigContainer4B";
 import PreviewNorContainer5 from "../Newspaper/PreviewContainers/PreviewNorContainer5";
 import { updateNewsPageConfig } from "../../Api/newsPageApi";
-import { setNewsPageConfig } from "../Slice/newspageSlice";
 
 export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
-  const dispatch = useDispatch();
   const { id } = useParams();
-  const { allNews, translatedNews, language } = useSelector((state) => state.newsform);
-  const newsPageConfig = useSelector((state) => state.newspage?.config);
-  const allPages = useSelector((state) => state.admin?.allPages || []);
+  const {
+    allNews,
+    translatedNews,
+    language,
+    newsPageConfig,
+    adminConfig,
+    setNewsPageConfig,
+    loading,
+  } = useSiteData();
+  const allPages = adminConfig?.allPages || [];
   
   // Font size state - starts at 100% (base size)
   const [fontSize, setFontSize] = useState(100);
@@ -126,13 +130,17 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  if (loading) {
+    return <div style={{ padding: 40 }}>Loading news...</div>;
+  }
+
   const newsSource = language === "en" && translatedNews?.length ? translatedNews : allNews;
   const fallbackId = allNews.length > 0 ? allNews[0].id : null;
   const activeId = forcedNewsId ?? (id ? Number(id) : null) ?? fallbackId;
   const currentNews =
     newsSource.find((news) => news.id === Number(activeId)) ||
     allNews.find((news) => news.id === Number(activeId));
-  const MLayout = useSelector((state) => state.newsform.MLayout);
+  const MLayout = 1;
 
   const filterNewsByCategory = (category, list) => {
     if (!category) return list;
@@ -244,7 +252,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
     try {
       const updated = await updateNewsPageConfig(nextConfig);
-      dispatch(setNewsPageConfig(updated));
+      setNewsPageConfig(updated);
       setEditSection(null);
     } catch (error) {
       console.error("Failed to update newspage settings:", error);

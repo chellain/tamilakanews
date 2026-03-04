@@ -1,15 +1,14 @@
-﻿import React, { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { updatePollData } from "../../Slice/editpaperSlice/editpaperslice";
-import { saveLayout } from "../../../Api/layoutApi";
+import React, { useState } from "react";
+import { voteOnPoll } from "../../../Api/layoutApi";
+import { useSiteData } from "../../../context/SiteDataContext";
+import { findSlotItem, updateSlotItem } from "../../../context/layoutHelpers";
 
 /**
  * PreviewPollContainer
  *
  * Read-only renderable poll for the public newspaper view.
  * - No close / edit controls.
- * - Options are clickable â†’ dispatches a vote increment to Redux so the
- *   percentage + count updates instantly and persists in state.
+ * - Options are clickable -> registers a vote and persists to the backend.
  * - Supports both single and multiple-answer polls via allowMultiple.
  */
 const PreviewPollContainer = ({
@@ -19,27 +18,18 @@ const PreviewPollContainer = ({
   isNested = false,
   parentContainerId = null,
 }) => {
-  const dispatch = useDispatch();
-  const layoutState = useSelector((state) => state.editpaper);
-  const hasMountedRef = useRef(false);
-  const lastTotalVotesRef = useRef(null);
+  const { layout, updateLayoutLocal } = useSiteData();
 
-  // Read poll data straight from Redux (same path used in the editor)
-  const pollData = useSelector((state) => {
-    const page = state.editpaper.pages.find((p) => p.catName === catName);
-
-    if (isNested && parentContainerId) {
-      const nestedCont = page?.containers
-        .find((c) => c.id === parentContainerId)
-        ?.nestedContainers?.find((nc) => nc.id === containerId);
-      const item = nestedCont?.items?.find((i) => i.slotId === slotId);
-      return item?.pollData || null;
-    } else {
-      const container = page?.containers.find((c) => c.id === containerId);
-      const item = container?.items.find((i) => i.slotId === slotId);
-      return item?.pollData || null;
-    }
+  // Read poll data from layout
+  const slot = findSlotItem({
+    layout,
+    catName,
+    containerId,
+    slotId,
+    isNested,
+    parentContainerId,
   });
+  const pollData = slot?.pollData || null;
 
   // Track which options the user has already voted on (local only, per session)
   const [votedIndices, setVotedIndices] = useState([]);
@@ -47,42 +37,27 @@ const PreviewPollContainer = ({
 
   if (!pollData) return null;
 
-  const buildLayoutPayload = (state) => ({
-    pages: state.pages,
-    presetContainers: state.presetContainers,
-    activePage: state.activePage,
-    activeLineId: state.activeLineId,
-  });
-
-  useEffect(() => {
-    if (!pollData) return;
-
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      lastTotalVotesRef.current = pollData.totalVotes ?? 0;
-      return;
-    }
-
-    if (pollData.totalVotes === lastTotalVotesRef.current) return;
-
-    lastTotalVotesRef.current = pollData.totalVotes;
-
-    const payload = buildLayoutPayload(layoutState);
-    saveLayout(payload).catch((error) => {
-      console.error("Failed to persist poll vote:", error);
-    });
-  }, [pollData?.totalVotes, layoutState]);
-
   const getPercentage = (votes) => {
     if (!pollData.totalVotes) return 0;
     return Math.round((votes / pollData.totalVotes) * 100);
   };
 
-  const handleVote = (index) => {
-    // If already voted on this option, do nothing
-    if (votedIndices.includes(index)) return;
+  const applyPollUpdate = (nextPollData) => {
+    updateLayoutLocal((prev) =>
+      updateSlotItem({
+        layout: prev,
+        catName,
+        containerId,
+        slotId,
+        isNested,
+        parentContainerId,
+        updater: (item) => ({ ...item, pollData: nextPollData }),
+      })
+    );
+  };
 
-    // If single-answer and already voted, do nothing
+  const handleVote = async (index) => {
+    if (votedIndices.includes(index)) return;
     if (!pollData.allowMultiple && votedIndices.length > 0) return;
 
     const newOptions = pollData.options.map((opt, i) =>
@@ -90,32 +65,38 @@ const PreviewPollContainer = ({
     );
     const newTotalVotes = newOptions.reduce((sum, opt) => sum + opt.votes, 0);
 
-    dispatch(
-      updatePollData({
+    const optimisticPoll = {
+      ...pollData,
+      options: newOptions,
+      totalVotes: newTotalVotes,
+    };
+
+    applyPollUpdate(optimisticPoll);
+    setVotedIndices((prev) => [...prev, index]);
+    setRevealed(true);
+
+    try {
+      const updated = await voteOnPoll({
         catName,
         containerId,
         slotId,
-        pollData: {
-          ...pollData,
-          options: newOptions,
-          totalVotes: newTotalVotes,
-        },
         isNested,
         parentContainerId,
-      })
-    );
+        optionIndex: index,
+      });
 
-    const next = [...votedIndices, index];
-    setVotedIndices(next);
-    setRevealed(true);
+      if (updated?.pollData) {
+        applyPollUpdate(updated.pollData);
+      }
+    } catch (error) {
+      console.error("Failed to persist poll vote:", error);
+    }
   };
 
   const hasVoted = votedIndices.length > 0;
 
   return (
     <div className="preview-poll-wrapper">
-      
-
       <div className="preview-poll-question">{pollData.question}</div>
 
       {!hasVoted && (
@@ -129,7 +110,6 @@ const PreviewPollContainer = ({
         const isChosen = votedIndices.includes(index);
 
         if (!revealed) {
-          // Before any vote â€” show clean clickable buttons
           return (
             <div
               key={index}
@@ -143,7 +123,6 @@ const PreviewPollContainer = ({
           );
         }
 
-        // After voting â€” show bars + percentage + count
         return (
           <div
             key={index}
@@ -151,10 +130,7 @@ const PreviewPollContainer = ({
             onClick={() => handleVote(index)}
             style={{ cursor: pollData.allowMultiple && !isChosen ? "pointer" : "default" }}
           >
-            <div
-              className="preview-poll-fill"
-              style={{ width: `${pct}%` }}
-            />
+            <div className="preview-poll-fill" style={{ width: `${pct}%` }} />
             <div className="preview-poll-option-voted-content">
               <div className="preview-poll-option-text">{option.text}</div>
               <div className="preview-poll-stats">
@@ -176,4 +152,3 @@ const PreviewPollContainer = ({
 };
 
 export default PreviewPollContainer;
-

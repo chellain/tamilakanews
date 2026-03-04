@@ -1,14 +1,12 @@
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { updateNews } from "../Slice/newsformSlice.js";
-import { updateNews as updateNewsApi } from "../../Api/newsApi.js";
+import { addNewsComment } from "../../Api/newsApi.js";
+import { useSiteData } from "../../context/SiteDataContext";
 import "./Previewpge.scss";
 import timeFun from "../Newspaper/Containers_/timeFun.js";
 import Line from "../Newspaper/Components/Line.jsx";
 
 export default function CommentSection({ newsId, comments = [] }) {
-  const dispatch = useDispatch();
-  const language = useSelector((state) => state.newsform?.language || "ta");
+  const { language, updateNewsLocal } = useSiteData();
   const [commentText, setCommentText] = useState("");
   const [userName, setUserName] = useState("");
   const [showAll, setShowAll] = useState(false);
@@ -39,8 +37,12 @@ export default function CommentSection({ newsId, comments = [] }) {
       const nextComments = [...comments, newComment];
 
       try {
-        await updateNewsApi(newsId, { comments: nextComments });
-        dispatch(updateNews({ id: newsId, updatedNews: { comments: nextComments } }));
+        const updated = await addNewsComment(newsId, newComment);
+        if (updated?.comments) {
+          updateNewsLocal(newsId, (prev) => ({ ...prev, comments: updated.comments }));
+        } else {
+          updateNewsLocal(newsId, (prev) => ({ ...prev, comments: nextComments }));
+        }
         setCommentText("");
         setUserName("");
       } catch (error) {

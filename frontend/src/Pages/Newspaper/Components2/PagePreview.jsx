@@ -1,7 +1,9 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
-import { useSelector } from "react-redux";
+import React, { useMemo, useState, useEffect, createContext, useContext } from "react";
 import PreviewContainer from "./PreviewContainer";
 import PreviewSlider from "./PreviewSlider";
+import { useSiteData } from "../../../context/SiteDataContext";
+import { findPageByName } from "../../../context/layoutHelpers";
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MobileContext
@@ -53,10 +55,26 @@ function useIsMobile() {
 
 export default function PagePreview({ pageName = "main" }) {
   const isMobile = useIsMobile();
-
-  const currentPage = useSelector((state) =>
-    state.editpaper.pages.find((p) => p.catName === pageName)
+  const { layout, loading } = useSiteData();
+  const currentPage = useMemo(
+    () => findPageByName(layout, pageName),
+    [layout, pageName]
   );
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          padding: "40px",
+          textAlign: "center",
+          color: "#999",
+          fontSize: "16px",
+        }}
+      >
+        Loading page...
+      </div>
+    );
+  }
 
   if (!currentPage) {
     return (

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import timeFun from "../Containers_/timeFun";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
 import jwt from "../../../assets/jwt.jpg";
+import { useSiteData } from "../../../context/SiteDataContext";
+import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 
 const PreviewNorContainer5 = ({
   newsId,
@@ -16,38 +17,41 @@ const PreviewNorContainer5 = ({
   isSlider2 = false,
   isNested = false,
   parentContainerId = null,
+  sliderId = null,
 }) => {
   const [hovered, setHovered] = useState(false);
   const navigate = useNavigate();
-  const { allNews = [], translatedNews = [], language } = useSelector(
-    (state) => state.newsform || {}
-  );
+  const { allNews, translatedNews, language, layout } = useSiteData();
 
   // FIX: Read showSeparator from Redux slot state if slot props are provided,
   // otherwise fall back to the prop passed directly.
-  const slotFromRedux = useSelector((state) => {
+  const slotFromLayout = (() => {
     if (!catName || !containerId || !slotId) return null;
-    const page = state.editpaper?.pages?.find((p) => p.catName === catName);
-    if (!page) return null;
-
     if (isSlider || isSlider2) {
-      const slider = page.sliders?.find((s) => s.id === containerId);
-      return slider?.items?.find((i) => i.slotId === slotId) || null;
-    } else if (isNested && parentContainerId) {
-      const nestedCont = page.containers
-        ?.find((c) => c.id === parentContainerId)
-        ?.nestedContainers?.find((nc) => nc.id === containerId);
-      return nestedCont?.items?.find((i) => i.slotId === slotId) || null;
-    } else {
-      const container = page.containers?.find((c) => c.id === containerId);
-      return container?.items?.find((i) => i.slotId === slotId) || null;
+      return findSliderSlotItem({
+        layout,
+        catName,
+        sliderId: sliderId || containerId,
+        slotId,
+        isNested,
+        parentContainerId,
+        containerId,
+      });
     }
-  });
+    return findSlotItem({
+      layout,
+      catName,
+      containerId,
+      slotId,
+      isNested,
+      parentContainerId,
+    });
+  })();
 
   // Prefer Redux value if available, otherwise use the prop
   const showSeparator =
-    slotFromRedux !== null
-      ? slotFromRedux?.showSeparator || false
+    slotFromLayout !== null
+      ? slotFromLayout?.showSeparator || false
       : showSeparatorProp || false;
 
   const newsSource = language === "en" ? translatedNews : allNews;
@@ -88,7 +92,7 @@ const PreviewNorContainer5 = ({
 
   return (
     <div
-      style={{ position: "relative", display: "inline-flex", flexDirection: "column", width: "fit-content" }}
+      style={{ position: "relative", display: "inline-flex", flexDirection: "column", width: "100%" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

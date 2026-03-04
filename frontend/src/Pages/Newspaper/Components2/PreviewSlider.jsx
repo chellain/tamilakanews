@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import PreviewBigContainer1 from "../PreviewContainers/PreviewBigContainer1";
@@ -19,6 +18,8 @@ import PreviewNorContainer5 from "../PreviewContainers/PreviewNorContainer5";
 import PreviewUniversalNewsContainer from "../PreviewContainers/PreviewUniversalNewsContainer";
 
 import Newsheader from "../Components/Newsheader";
+import { useSiteData } from "../../../context/SiteDataContext";
+import { findSlider } from "../../../context/layoutHelpers";
 
 const COMPONENT_MAP = {
   "Universal Container": PreviewUniversalNewsContainer,
@@ -50,27 +51,14 @@ export default function PreviewSlider({
   const [translateX, setTranslateX] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [fadeKey, setFadeKey] = useState(0);
-
-  const slider = useSelector((state) => {
-    const page = state.editpaper.pages.find((p) => p.catName === catName);
-    
-    if (!page) return null;
-    
-    // If this slider is at page level (no containerId)
-    if (!containerId) {
-      return page.sliders?.find((s) => s.id === id);
-    }
-    
-    // If this slider is inside a nested container
-    if (isNested && parentContainerId) {
-      const parentCont = page.containers.find((c) => c.id === parentContainerId);
-      const nestedCont = parentCont?.nestedContainers?.find((nc) => nc.id === containerId);
-      return nestedCont?.sliders?.find((s) => s.id === id);
-    }
-    
-    // If this slider is inside a regular container
-    const container = page.containers.find((c) => c.id === containerId);
-    return container?.sliders?.find((s) => s.id === id);
+  const { layout } = useSiteData();
+  const slider = findSlider({
+    layout,
+    catName,
+    sliderId: id,
+    containerId,
+    isNested,
+    parentContainerId,
   });
 
   if (!slider) return null;
@@ -223,6 +211,7 @@ export default function PreviewSlider({
                         slotId={item.slotId}
                         catName={catName}
                         containerId={containerId}
+                        sliderId={id}
                         isSlider={true}
                         isNested={isNested}
                         parentContainerId={parentContainerId}
@@ -402,6 +391,7 @@ export default function PreviewSlider({
                         newsId={container.newsId}
                         version={container.shfval ?? 1}
                         showSeparator={container.showSeparator || false}
+                        sliderId={id}
                       />
                     )}
                   </div>

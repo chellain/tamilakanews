@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
 import timeFun from "./timeFun";
 
@@ -11,9 +11,7 @@ const BigNewsContainer4B = ({
   imgHeight = 280,
 }) => {
   const navigate = useNavigate();
-  const { allNews = [], translatedNews = [], language } = useSelector(
-    (state) => state.newsform || {}
-  );
+  const { allNews, translatedNews, language } = useSiteData();
 
   const newsToShow = (language === "en" ? translatedNews : allNews) || [];
 

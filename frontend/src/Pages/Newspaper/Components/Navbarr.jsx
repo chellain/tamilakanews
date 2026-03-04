@@ -9,10 +9,9 @@ import { HiMiniMoon } from "react-icons/hi2";
 import { IoSunnySharp } from "react-icons/io5";
 import { IoClose } from "react-icons/io5";
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { useDispatch, useSelector } from "react-redux";
-import { setLanguage } from "../../Slice/newsformSlice.js";
 import { useNavigate } from "react-router-dom";
 import { getTodayInTamil } from './getTodayInTamil.js';
+import { useSiteData } from "../../../context/SiteDataContext";
 // Utility: highlight matching text within a string
 function HighlightText({ text, query }) {
   if (!query || !text) return <span>{text}</span>;
@@ -38,11 +37,10 @@ function HighlightText({ text, query }) {
 
 export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setActivePage }) {
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const { allNews, translatedNews, language } = useSelector((state) => state.newsform);
-  const { allPages, selectedDistrict1 } = useSelector((state) => state.admin);
+  const { allNews, translatedNews, language, setLanguage, adminConfig } = useSiteData();
+  const allPages = adminConfig?.allPages || [];
+  const selectedDistrict1 = adminConfig?.selectedDistrict1;
 
   const [isMobile, setIsMobile] = useState(window.innerWidth > 768);
   const [districtDropdownOpen, setDistrictDropdownOpen] = useState(false);
@@ -191,7 +189,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
   const handleLanguageSelect = (lang) => {
     setLangPopupOpen(false);
     if (lang !== language) {
-      dispatch(setLanguage(lang));
+      setLanguage(lang);
     }
   };
 

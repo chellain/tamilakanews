@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FaPlay } from "react-icons/fa";
-import { useSelector } from "react-redux";
+import { useSiteData } from "../../../context/SiteDataContext";
+import { useMobile } from "../Components2/PagePreview";
+import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 
 /**
  * PreviewVideoContainer
@@ -24,26 +26,28 @@ const PreviewVideoContainer = ({
   sliderId = null,
 }) => {
   const videoRef = useRef(null);
+  const isMobile = useMobile();
 
-  // ── Read slot from Redux (mirrors editor's selector) ──────────────────────
-  const slot = useSelector((state) => {
-    const page = state.editpaper.pages.find((p) => p.catName === catName);
-
-    if (isSlider || isSlider2) {
-      const slider = page?.containers
-        .find((c) => c.id === containerId)
-        ?.sliders?.find((s) => s.id === sliderId);
-      return slider?.items.find((i) => i.slotId === slotId);
-    } else if (isNested && parentContainerId) {
-      const nestedCont = page?.containers
-        .find((c) => c.id === parentContainerId)
-        ?.nestedContainers?.find((nc) => nc.id === containerId);
-      return nestedCont?.items?.find((i) => i.slotId === slotId);
-    } else {
-      const container = page?.containers.find((c) => c.id === containerId);
-      return container?.items.find((i) => i.slotId === slotId);
-    }
-  });
+  const { layout } = useSiteData();
+  const slot =
+    (isSlider || isSlider2) && sliderId
+      ? findSliderSlotItem({
+          layout,
+          catName,
+          sliderId,
+          slotId,
+          isNested,
+          parentContainerId,
+          containerId,
+        })
+      : findSlotItem({
+          layout,
+          catName,
+          containerId,
+          slotId,
+          isNested,
+          parentContainerId,
+        });
 
   const videoData = slot?.videoData;
   // Use width saved by the editor; fall back to 800
@@ -88,7 +92,8 @@ const PreviewVideoContainer = ({
       : containerWidth;
 
   const wrapperStyle = {
-    width: `${resolvedWidth}px`,
+    width: isMobile ? "100%" : `${resolvedWidth}px`,
+    maxWidth: "100%",
     position: "relative",
     borderRadius: "8px",
     overflow: "hidden",

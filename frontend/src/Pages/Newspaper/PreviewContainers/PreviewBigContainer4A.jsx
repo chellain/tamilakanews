@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import timeFun from "../Containers_/timeFun";
-import { useSelector } from "react-redux";
+import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
 
 const PreviewBigContainer4A = ({
@@ -11,9 +11,7 @@ const PreviewBigContainer4A = ({
 }) => {
   const navigate = useNavigate();
 
-  const { allNews = [], translatedNews = [], language } = useSelector(
-    (state) => state.newsform || {}
-  );
+  const { allNews, translatedNews, language } = useSiteData();
 
   const newsSource = language === "en" ? translatedNews : allNews;
   const news = newsSource.find((n) => n.id === newsId);
@@ -48,7 +46,7 @@ const PreviewBigContainer4A = ({
   };
 
   return (
-    <div style={{ position: "relative", width: "fit-content" }}>
+    <div style={{ position: "relative", width: "100%" }}>
       <div
         className="preview-bg-news-4a"
         onClick={handleNavigate}

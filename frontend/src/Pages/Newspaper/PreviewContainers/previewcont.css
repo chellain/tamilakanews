@@ -698,6 +698,13 @@
   background-color: #999;
   margin-top: 4px;
 }
+@media (max-width: 1024px) {
+  .preview-nm-news-4b {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+}
 
 /* PreviewNorContainer5 */
 .ep-nm2-news-2,

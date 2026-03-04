@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import timeFun from "../Containers_/timeFun";
-import { useSelector } from "react-redux";
 import jwt from "../../../assets/jwt.jpg";
+import { useSiteData } from "../../../context/SiteDataContext";
+import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
+import { useMobile } from "../Components2/PagePreview";
 
 const PreviewUniversalNewsContainer = ({
   catName,
@@ -14,38 +16,28 @@ const PreviewUniversalNewsContainer = ({
   sliderId = null,
 }) => {
   const navigate = useNavigate();
-  const { allNews = [], translatedNews = [], language } = useSelector(
-    (state) => state.newsform || {}
-  );
+  const { allNews, translatedNews, language, layout } = useSiteData();
+  const isMobile = useMobile();
 
-  // Read slot from Redux directly — all values come from here
-  const slot = useSelector((state) => {
-    const page = state.editpaper.pages.find((p) => p.catName === catName);
-    if (!page) return null;
-
-    if ((isSlider || isSlider2) && sliderId) {
-      let slider = null;
-      if (isNested && parentContainerId) {
-        slider = page.containers
-          ?.find((c) => c.id === parentContainerId)
-          ?.nestedContainers?.find((nc) => nc.id === containerId)
-          ?.sliders?.find((s) => s.id === sliderId);
-      } else {
-        slider = page.containers
-          ?.find((c) => c.id === containerId)
-          ?.sliders?.find((s) => s.id === sliderId);
-      }
-      return slider?.items?.find((i) => i.slotId === slotId) ?? null;
-    } else if (isNested && parentContainerId) {
-      const nestedCont = page.containers
-        ?.find((c) => c.id === parentContainerId)
-        ?.nestedContainers?.find((nc) => nc.id === containerId);
-      return nestedCont?.items?.find((i) => i.slotId === slotId) ?? null;
-    } else {
-      const container = page.containers?.find((c) => c.id === containerId);
-      return container?.items?.find((i) => i.slotId === slotId) ?? null;
-    }
-  });
+  const slot =
+    (isSlider || isSlider2) && sliderId
+      ? findSliderSlotItem({
+          layout,
+          catName,
+          sliderId,
+          slotId,
+          isNested,
+          parentContainerId,
+          containerId,
+        })
+      : findSlotItem({
+          layout,
+          catName,
+          containerId,
+          slotId,
+          isNested,
+          parentContainerId,
+        });
 
   // All values read from Redux slot
   const containerWidth  = slot?.dimensions?.containerWidth  ?? 400;
@@ -92,11 +84,13 @@ const PreviewUniversalNewsContainer = ({
   };
 
   const imageStyle = {
-    width:        `${imgWidth}px`,
-    height:       `${imgHeight}px`,
+    width:        isMobile ? "100%" : `${imgWidth}px`,
+    height:       isMobile ? "auto" : `${imgHeight}px`,
     borderRadius: "5px",
     overflow:     "hidden",
     flexShrink:   0,
+    maxWidth:     "100%",
+    aspectRatio:  isMobile && imgWidth && imgHeight ? `${imgWidth}/${imgHeight}` : undefined,
   };
 
   const headlineStyle = {
@@ -135,6 +129,13 @@ const PreviewUniversalNewsContainer = ({
     );
   };
 
+  const rowLayout = {
+    display: "flex",
+    gap: "15px",
+    alignItems: "flex-start",
+    flexDirection: isMobile ? "column" : "row",
+  };
+
   const renderLayout = () => {
     switch (version) {
       case 1:
@@ -166,7 +167,7 @@ const PreviewUniversalNewsContainer = ({
         );
       case 4:
         return (
-          <div style={{ display: "flex", gap: "15px", alignItems: "flex-start" }}>
+          <div style={rowLayout}>
             <div style={imageStyle}>{renderMedia()}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={headlineStyle}>{renderData.headline}</div>
@@ -177,7 +178,7 @@ const PreviewUniversalNewsContainer = ({
         );
       case 5:
         return (
-          <div style={{ display: "flex", gap: "15px", alignItems: "flex-start" }}>
+          <div style={rowLayout}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={headlineStyle}>{renderData.headline}</div>
               <div style={contentStyle}>{renderData.content}</div>
@@ -188,7 +189,7 @@ const PreviewUniversalNewsContainer = ({
         );
       case 6:
         return (
-          <div style={{ display: "flex", gap: "15px", alignItems: "flex-start" }}>
+          <div style={rowLayout}>
             <div style={imageStyle}>{renderMedia()}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={headlineStyle}>{renderData.headline}</div>
@@ -198,7 +199,7 @@ const PreviewUniversalNewsContainer = ({
         );
       case 7:
         return (
-          <div style={{ display: "flex", gap: "15px", alignItems: "flex-start" }}>
+          <div style={rowLayout}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={headlineStyle}>{renderData.headline}</div>
               <div style={timeStyle}>{renderData.time}</div>
@@ -208,7 +209,7 @@ const PreviewUniversalNewsContainer = ({
         );
       case 8:
         return (
-          <div style={{ display: "flex", gap: "15px", alignItems: "flex-start" }}>
+          <div style={rowLayout}>
             <div style={imageStyle}>{renderMedia()}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={contentStyle}>{renderData.content}</div>
@@ -218,7 +219,7 @@ const PreviewUniversalNewsContainer = ({
         );
       case 9:
         return (
-          <div style={{ display: "flex", gap: "15px", alignItems: "flex-start" }}>
+          <div style={rowLayout}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={contentStyle}>{renderData.content}</div>
               <div style={timeStyle}>{renderData.time}</div>
@@ -258,11 +259,13 @@ const PreviewUniversalNewsContainer = ({
         className="preview-universal-container"
         onClick={handleNavigate}
         style={{
-          width:      containerWidth  > 0 ? `${containerWidth}px`  : undefined,
-          minHeight:  containerHeight > 0 ? `${containerHeight}px` : undefined,
+          width:      isMobile ? "100%" : (containerWidth  > 0 ? `${containerWidth}px`  : undefined),
+          minHeight:  isMobile ? undefined : (containerHeight > 0 ? `${containerHeight}px` : undefined),
           padding:    `${padding}px`,
           cursor:     "pointer",
           transition: "0.3s ease-in-out",
+          maxWidth:   "100%",
+          boxSizing:  "border-box",
         }}
       >
         

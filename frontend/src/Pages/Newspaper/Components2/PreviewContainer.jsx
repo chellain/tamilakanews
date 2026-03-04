@@ -1,5 +1,4 @@
 import React from "react";
-import { useSelector } from "react-redux";
 import "../PreviewContainers/previewcont.css";
 
 // Import all preview components
@@ -24,6 +23,8 @@ import PreviewUniversalNewsContainer from "../PreviewContainers/PreviewUniversal
 
 // Consume the MobileContext provided by PagePreview
 import { useMobile } from "./PagePreview";
+import { useSiteData } from "../../../context/SiteDataContext";
+import { findContainer } from "../../../context/layoutHelpers";
 
 // Component mapping
 const COMPONENT_MAP = {
@@ -57,26 +58,13 @@ export default function PreviewContainer({
   // without any extra prop forwarding.
   const isMobile = useMobile();
 
-  const containerData = useSelector(state => {
-    const page = state.editpaper.pages.find(p => p.catName === catName);
-    
-    if (isNested && parentContainerId) {
-      const findNested = (containers) => {
-        for (const cont of containers) {
-          if (cont.id === parentContainerId) {
-            return cont.nestedContainers?.find(nc => nc.id === id);
-          }
-          if (cont.nestedContainers?.length > 0) {
-            const found = findNested(cont.nestedContainers);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      return findNested(page?.containers || []);
-    } else {
-      return page?.containers.find(c => c.id === id);
-    }
+  const { layout } = useSiteData();
+  const containerData = findContainer({
+    layout,
+    catName,
+    containerId: id,
+    isNested,
+    parentContainerId,
   });
 
   if (!containerData) return null;

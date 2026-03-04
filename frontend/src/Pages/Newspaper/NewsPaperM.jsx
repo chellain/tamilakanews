@@ -2,6 +2,7 @@ import React from "react";
 import Navbar from "./Components/Navbarr";
 import { useState, useEffect } from "react";
 import "./newspaper.scss";
+import "./PreviewContainers/previewcont.css";
 import Footer from "./Components/Footer";
 import Sidebar from "./Components/Sidebar";
 import PagePreview from "./Components2/PagePreview";
@@ -60,7 +61,7 @@ export default function NewsPaperM() {
             <PagePreview pageName={activePage} />
           </div>
           
-          <Footer/>
+          <Footer onNavigatePage={(pageName) => setActivePage(pageName)} />
         </div>
       </div>
     </div>

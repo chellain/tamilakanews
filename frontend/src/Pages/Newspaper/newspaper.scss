@@ -93,6 +93,23 @@
   height: fit-content;
   margin: 0 auto;
 }
+
+/* Footer logo sizing override (avoid header logo scale) */
+.foot-logo {
+  width: 240px;
+  padding: 8px 0;
+}
+
+.foot-logo .nav-c1l-t1 img {
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.foot-logo .nav-c1l-t2 {
+  font-size: 11px;
+}
 /* Overlay */
 .sb-overlay {
   position: fixed;
@@ -232,31 +249,45 @@
 }
 
 .sb-content {
-  padding: 10px 15px;
+  padding: 16px 18px 20px;
 }
 
 .sb-item {
-  border-bottom: 1px solid #eee;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
 }
 
 .sb-title {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: 10px 8px;
   font-weight: 600;
   cursor: pointer;
+  border-radius: 8px;
+  background: #fafafa;
+  transition: background-color 0.2s ease;
+}
+
+.sb-title:hover {
+  background: #f6f1f6;
 }
 
 .sb-sub {
-  padding-left: 15px;
-  padding-bottom: 10px;
+  padding-left: 18px;
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 .sb-sub li {
   list-style: none;
-  padding: 6px 0;
+  padding: 8px 0;
   font-size: 14px;
+  line-height: 1.5;
   cursor: pointer;
+}
+
+.sb-sub li:hover {
+  color: #e8098c;
 }
 //navbar
 .navcon1-v2
@@ -590,9 +621,29 @@
     font-size: 12px;
   }
 
-  .foot-con svg {
-    font-size: 16px;
-  }
+.foot-con svg {
+  font-size: 16px;
+}
+
+.foot-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.foot-section-link {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.foot-section-link:hover {
+  color: #e91e8c;
+}
+
+.foot-section-empty {
+  color: #999;
+  font-size: 13px;
+}
 }
 
 //main page

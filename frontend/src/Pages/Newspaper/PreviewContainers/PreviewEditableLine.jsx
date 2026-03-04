@@ -1,25 +1,14 @@
 import React from "react";
-import { useSelector } from "react-redux";
+import { useSiteData } from "../../../context/SiteDataContext";
+import { findLine } from "../../../context/layoutHelpers";
 
 const PreviewEditableLine = ({
   catName,
   containerId,
   parentContainerId = null,
 }) => {
-  const lines = useSelector((state) => {
-    const page = state.editpaper.pages.find((p) => p.catName === catName);
-    if (!page) return [];
-
-    if (parentContainerId) {
-      const nestedCont = page.containers
-        ?.find((c) => c.id === parentContainerId)
-        ?.nestedContainers?.find((nc) => nc.id === containerId);
-      return nestedCont?.lines || [];
-    } else {
-      const container = page.containers?.find((c) => c.id === containerId);
-      return container?.lines || [];
-    }
-  });
+  const { layout } = useSiteData();
+  const lines = findLine({ layout, catName, containerId, parentContainerId });
 
   if (!lines.length) return null;
 

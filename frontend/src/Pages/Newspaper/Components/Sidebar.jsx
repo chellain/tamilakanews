@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { IoClose } from "react-icons/io5";
 import logo from "../../../assets/logo1.png";
 import { IoSearchSharp } from "react-icons/io5";
 import { BiWorld } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
-import { setLanguage } from "../../Slice/newsformSlice.js";
+import { useSiteData } from "../../../context/SiteDataContext";
 
 // Utility: highlight matching text within a string
 function HighlightText({ text, query }) {
@@ -37,15 +36,13 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [langPopupOpen, setLangPopupOpen] = useState(false);
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const searchContainerRef = useRef(null);
   const searchInputRef = useRef(null);
   const globeRef = useRef(null);
 
-  // Get navigation data from Redux store
-  const { allPages } = useSelector((state) => state.admin);
-  const { allNews, translatedNews, language } = useSelector((state) => state.newsform);
+  const { allNews, translatedNews, language, setLanguage, adminConfig } = useSiteData();
+  const allPages = adminConfig?.allPages || [];
 
   // Filter and sort pages that should appear in sidebar
   const sidebarPages = allPages
@@ -69,7 +66,7 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
   const handleLanguageSelect = (lang) => {
     setLangPopupOpen(false);
     if (lang !== language) {
-      dispatch(setLanguage(lang));
+      setLanguage(lang);
     }
   };
 
@@ -209,7 +206,7 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
           </div>
           <div
             className="nav-c1l-t2-v2"
-            style={{ position: "absolute", transform: "translateY(20px)" }}
+            style={{ position: "absolute", transform: "translateY(30px)" }}
           >
             நடுநிலை நாளிதழ்
           </div>
