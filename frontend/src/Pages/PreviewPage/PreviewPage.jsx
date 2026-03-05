@@ -299,7 +299,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   };
 
   return (
-    <div className="prepge-main" style={{ ...themeStyle, minHeight: "100vh" }}>
+    <div className={`prepge-main ${isOn ? "dark" : ""}`} style={{ ...themeStyle, minHeight: "100vh" }}>
       <div className="pp-nav-ov">
         <Navbarr
           setIsOn={setIsOn}
