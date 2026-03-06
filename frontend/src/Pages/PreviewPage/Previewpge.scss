@@ -171,6 +171,56 @@
     }
   }
 
+  // dark mode overrides
+  .prepge-main.dark {
+    background-color: #141414 !important;
+    color: #ffffff !important;
+  }
+
+  .prepge-main.dark .comment-section {
+    color: #ffffff;
+  }
+
+  .prepge-main.dark .comments-display-box {
+    background: #1c1c1c;
+    border-top: 1px solid #555;
+  }
+
+  .prepge-main.dark .comment-input {
+    background: #222;
+    color: #fff;
+    border-bottom: 2px solid #555;
+  }
+
+  .prepge-main.dark .comment-header h3,
+  .prepge-main.dark .comment-content .comment-name {
+    color: #fff;
+  }
+
+  .prepge-main.dark .comment-content .comment-text {
+    color: #ddd;
+  }
+
+  .prepge-main.dark .comment-content .comment-time {
+    color: #aaa;
+  }
+
+  .prepge-main.dark .view-more-btn {
+    color: #ff88cc;
+  }
+
+  .prepge-main.dark .view-more-btn:hover {
+    color: #ff66cc;
+  }
+
+  /* ensure main article containers don’t stay white */
+  .prepge-main.dark .main-news-cont,
+  .prepge-main.dark .main-news-sbcon1,
+  .prepge-main.dark .premain-con1-sub,
+  .prepge-main.dark .Prevpge-main-con1 {
+    background: transparent;
+  }
+
   // Responsive Design
   @media (max-width: 768px) {
     // padding: 0 0px;
