@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import timeFun from "../Containers_/timeFun";
 import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
+import LazyImage from "../../Shared/LazyImage";
 
 const PreviewNorContainer1 = ({
   newsId,
@@ -50,7 +51,7 @@ const PreviewNorContainer1 = ({
       >
         {version === 1 && (
           <div className="preview-nm-news-1-inner">
-            <div className="preview-epnn1-img"><img src={renderData.image} alt="" /></div>
+            <div className="preview-epnn1-img"><LazyImage src={renderData.image} alt="" /></div>
             <div className="preview-nm1-sbc">
               <div className="preview-epnn1-hdln">{renderData.headline}</div>
               <div className="preview-epnn1-onln">{renderData.content}</div>
@@ -66,7 +67,7 @@ const PreviewNorContainer1 = ({
               <div className="preview-epnn2-onln">{renderData.content}</div>
               <div className="preview-epnn-tm">{renderData.time}</div>
             </div>
-            <div className="preview-epnn2-img"><img src={renderData.image} alt="" /></div>
+            <div className="preview-epnn2-img"><LazyImage src={renderData.image} alt="" /></div>
           </div>
         )}
 

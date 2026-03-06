@@ -1,0 +1,94 @@
+import { useEffect, useState } from "react";
+
+const BRAND_LOADER_MS = 3000;
+const BRAND_FADE_MS = 600;
+
+export default function useProgressiveLoading({
+  totalItems = 0,
+  initialBatch = 3,
+  batchSize = 4,
+  enable = true,
+}) {
+  const [showBrandLoader, setShowBrandLoader] = useState(true);
+  const [brandFading, setBrandFading] = useState(false);
+  const [phase, setPhase] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(0);
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setBrandFading(true), BRAND_LOADER_MS);
+    const hideTimer = setTimeout(
+      () => setShowBrandLoader(false),
+      BRAND_LOADER_MS + BRAND_FADE_MS
+    );
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!enable) {
+      setShowBrandLoader(false);
+      setBrandFading(false);
+      setPhase(3);
+      setVisibleCount(totalItems);
+      return;
+    }
+
+    if (showBrandLoader) return;
+
+    const nextInitial = Math.min(initialBatch, totalItems);
+    setVisibleCount(nextInitial);
+    setPhase(0);
+
+    const textTimer = setTimeout(() => setPhase(1), 120);
+    const containerTimer = setTimeout(() => setPhase(2), 450);
+
+    return () => {
+      clearTimeout(textTimer);
+      clearTimeout(containerTimer);
+    };
+  }, [enable, initialBatch, showBrandLoader, totalItems]);
+
+  useEffect(() => {
+    if (showBrandLoader || phase < 2) return;
+    if (visibleCount >= totalItems) return;
+
+    let cancelled = false;
+    const schedule = () => {
+      if (cancelled) return;
+      setVisibleCount((prev) => Math.min(prev + batchSize, totalItems));
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(schedule, { timeout: 300 });
+      } else {
+        setTimeout(schedule, 60);
+      }
+    };
+
+    schedule();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [batchSize, phase, showBrandLoader, totalItems, visibleCount]);
+
+  useEffect(() => {
+    if (showBrandLoader) return;
+    if (phase < 2) return;
+    if (visibleCount < totalItems) return;
+    const timer = setTimeout(() => setPhase(3), 200);
+    return () => clearTimeout(timer);
+  }, [phase, showBrandLoader, totalItems, visibleCount]);
+
+  const showSkeletons = !showBrandLoader && phase === 0;
+  const canLoadImages = !showBrandLoader && phase >= 3;
+
+  return {
+    showBrandLoader,
+    brandFading,
+    phase,
+    visibleCount,
+    showSkeletons,
+    canLoadImages,
+  };
+}

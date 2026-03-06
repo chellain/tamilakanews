@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import timeFun from "../Containers_/timeFun";
 import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
+import LazyImage from "../../Shared/LazyImage";
 
 const PreviewBigContainer1 = ({
   newsId,
@@ -47,7 +48,7 @@ const PreviewBigContainer1 = ({
       <div className="preview-bg-news-1" onClick={handleNavigate}>
         {version === 1 && (
           <>
-            <div className="preview-epbn1-img"><img src={renderData.image} alt="" /></div>
+            <div className="preview-epbn1-img"><LazyImage src={renderData.image} alt="" /></div>
             <div className="preview-epbn1-hdln">{renderData.headline}</div>
             <div className="preview-epbn1-onln">{renderData.content}</div>
             <div className="preview-epn-tm">{renderData.time}</div>
@@ -56,7 +57,7 @@ const PreviewBigContainer1 = ({
         {version === 2 && (
           <>
             <div className="preview-epbn1-hdln">{renderData.headline}</div>
-            <div className="preview-epbn1-img"><img src={renderData.image} alt="" /></div>
+            <div className="preview-epbn1-img"><LazyImage src={renderData.image} alt="" /></div>
             <div className="preview-epbn1-onln">{renderData.content}</div>
             <div className="preview-epn-tm">{renderData.time}</div>
           </>
@@ -65,7 +66,7 @@ const PreviewBigContainer1 = ({
           <>
             <div className="preview-epbn1-hdln">{renderData.headline}</div>
             <div className="preview-epbn1-onln">{renderData.content}</div>
-            <div className="preview-epbn1-img"><img src={renderData.image} alt="" /></div>
+            <div className="preview-epbn1-img"><LazyImage src={renderData.image} alt="" /></div>
             <div className="preview-epn-tm">{renderData.time}</div>
           </>
         )}

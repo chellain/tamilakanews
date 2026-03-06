@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect, useRef } from 'react'
 import Line from './Line'
 import logo from "../../../assets/logo1.png";
 import { RiTwitterXLine } from "react-icons/ri";
@@ -11,6 +11,7 @@ export default function Footer({ onNavigatePage }) {
   const navigate = useNavigate();
   const { adminConfig, language } = useSiteData();
   const allPages = adminConfig?.allPages || [];
+  const noospaceRef = useRef(null);
 
   const sectionPages = useMemo(() => {
     const filtered = allPages.filter((page) => {
@@ -44,6 +45,37 @@ export default function Footer({ onNavigatePage }) {
     }
     navigate("/Newspaper");
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const node = noospaceRef.current;
+    if (!node) return;
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    if (!isMobile) return;
+    let triggered = false;
+    let timer = null;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (triggered || !entry.isIntersecting) return;
+          triggered = true;
+          node.classList.add("noospace-pulse");
+          timer = window.setTimeout(() => {
+            node.classList.remove("noospace-pulse");
+          }, 900);
+          window.setTimeout(() => observer.disconnect(), 1000);
+        });
+      },
+      { threshold: 0.6 }
+    );
+
+    observer.observe(node);
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, []);
   return (
     <div className='foot-con'>
     <Line direction="H" length="100%" thickness="2px" color="#e80d8c"/>
@@ -105,8 +137,19 @@ export default function Footer({ onNavigatePage }) {
     </div>
         <Line direction="H" length="100%" thickness="2px" color="#e80d8c"/>
         <div className="foot-cont-c113" style={{display: "flex", flexDirection: "column", alignItems: "center", fontWeight: "bold"}}>
-            <div style={{color: "#e80d8c"}}> © {new Date().getFullYear()} Tamilaga News. All Rights Reserved.</div>
-            <div> Designed & Developed by Tamilaga News Team</div>
+            <div style={{color: "#e80d8c"}}> © {new Date().getFullYear()} Tamilaka News. All Rights Reserved.</div>
+            <div>
+              Designed & Developed by{" "}
+              <a
+                ref={noospaceRef}
+                className="noospace-link"
+                href="https://noospacewebsolutions.blogspot.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Noospace Team
+              </a>
+            </div>
         </div>
  
                     

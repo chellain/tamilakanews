@@ -6,13 +6,43 @@ import { getNewsPageConfig } from "../Api/newsPageApi";
 
 const SiteDataContext = createContext(null);
 
+const resolveEnglishParagraph = (box) => {
+  if (!box || box.type !== "paragraph") return box;
+  const english = box.contentEn;
+  if (english == null || english === "") return box;
+  return { ...box, content: english };
+};
+
 const buildTranslatedNews = (newsList) => {
   if (!Array.isArray(newsList)) return [];
   return newsList.map((news) => {
-    if (news?.dataEn) {
-      return { ...news, data: news.dataEn };
-    }
-    return news;
+    const baseData = news?.data || {};
+    const enData = news?.dataEn || {};
+    const data = news?.dataEn ? { ...baseData, ...enData } : baseData;
+
+    const fullContent = Array.isArray(news?.fullContent)
+      ? news.fullContent.map(resolveEnglishParagraph)
+      : news?.fullContent;
+
+    const containerOverlays = Array.isArray(news?.containerOverlays)
+      ? news.containerOverlays.map((container) => {
+          if (!container?.settings?.boxes) return container;
+          return {
+            ...container,
+            settings: {
+              ...container.settings,
+              boxes: container.settings.boxes.map(resolveEnglishParagraph),
+            },
+          };
+        })
+      : news?.containerOverlays;
+
+    return {
+      ...news,
+      data,
+      fullContent,
+      containerOverlays,
+    };
   });
 };
 

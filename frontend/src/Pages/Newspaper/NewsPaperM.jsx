@@ -8,9 +8,15 @@ import Sidebar from "./Components/Sidebar";
 import PagePreview from "./Components2/PagePreview";
 
 export default function NewsPaperM() {
-  const [isOn, setIsOn] = useState(false);
+  const [isOn, setIsOn] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("tn_theme") === "dark";
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activePage, setActivePage] = useState("main");
+  const [activePage, setActivePage] = useState(() => {
+    if (typeof window === "undefined") return "main";
+    return window.localStorage.getItem("tn_activePage") || "main";
+  });
   
   const themeStyle = {
     backgroundColor: isOn ? "#141414" : "#ffffff",
@@ -35,6 +41,17 @@ export default function NewsPaperM() {
     };
   }, [isOn]);
 
+  // Persist theme across page switches
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("tn_theme", isOn ? "dark" : "light");
+  }, [isOn]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("tn_activePage", activePage);
+  }, [activePage]);
+
   return (
     <div style={{ ...themeStyle, width: "100%", minHeight: "100vh", margin: 0, padding: 0 }}>
       <div className="main-screen" style={{ ...themeStyle, backgroundColor: "transparent", maxWidth: "1280px", margin: "0 auto", padding: "0 24px" }}>
@@ -52,6 +69,8 @@ export default function NewsPaperM() {
           openSidebar={() => setSidebarOpen(true)}
           activePage={activePage}
           setActivePage={setActivePage}
+          isOn={isOn}
+          setIsOn={setIsOn}
         />
         
         <div className="np-main-cont-ov">

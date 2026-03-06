@@ -2,12 +2,12 @@ import React, { useState, useMemo, useEffect } from "react";
 
 import luffy from "../../assets/luffy.webp";
 import newsimg from "../../assets/newsimg.avif";
-import { IoSearchSharp, IoSettingsOutline } from "react-icons/io5";
+import { IoSearchSharp, IoSettingsOutline, IoInformationCircleOutline } from "react-icons/io5";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { BiWorld } from "react-icons/bi";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { HiMiniMoon } from "react-icons/hi2";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Footer from "../Newspaper/Components/Footer";
 import AutoScrollContainer from "../Newspaper/Components/AutoScrollContainer";
 import BigNewsContainer4A from "../Newspaper/Containers_/BigContainer4A";
@@ -37,9 +37,13 @@ import { FaXTwitter } from "react-icons/fa6";
 import BigNewsContainer4B from "../Newspaper/Containers_/BigContainer4B";
 import PreviewNorContainer5 from "../Newspaper/PreviewContainers/PreviewNorContainer5";
 import { updateNewsPageConfig } from "../../Api/newsPageApi";
+import useProgressiveLoading from "../Shared/useProgressiveLoading";
+import BrandLoader from "../Shared/BrandLoader";
+import LazyImage, { ImageLoadProvider } from "../Shared/LazyImage";
 
 export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   const { id } = useParams();
+  const navigate = useNavigate();
   const {
     allNews,
     translatedNews,
@@ -54,7 +58,10 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   // Font size state - starts at 100% (base size)
   const [fontSize, setFontSize] = useState(100);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isOn, setIsOn] = useState(false);
+  const [isOn, setIsOn] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("tn_theme") === "dark";
+  });
 
   const themeStyle = {
     backgroundColor: isOn ? "#141414" : "#ffffff",
@@ -63,33 +70,29 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     fontFamily: "Noto Sans Tamil",
   };
 
-  const icons = [
-    { icon: <FaWhatsapp />, href: "#" },
-    { icon: <FaFacebookF />, href: "#" },
-    { icon: <FaXTwitter />, href: "#" },
-    { icon: <FaLink />, href: "#" },
-  ];
-  
-  const styles = {
-    container: {
-      display: "flex",
-      gap: "12px",
-      margin: "15px 0px",
-    },
-    icon: {
-      width: "40px",
-      height: "40px",
-      borderRadius: "50%",
-      border: "1px solid #000",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "#000",
-      fontSize: "18px",
-      textDecoration: "none",
-      transition: "0.2s ease",
-    },
-  };
+  // Ensure full viewport (including side margins) follows dark/light mode
+  useEffect(() => {
+    const bg = isOn ? "#141414" : "#ffffff";
+    const fg = isOn ? "#ffffff" : "#141414";
+    document.body.style.backgroundColor = bg;
+    document.body.style.color = fg;
+    document.documentElement.style.backgroundColor = bg;
+    document.documentElement.style.color = fg;
+    return () => {
+      document.body.style.backgroundColor = "";
+      document.body.style.color = "";
+      document.documentElement.style.backgroundColor = "";
+      document.documentElement.style.color = "";
+    };
+  }, [isOn]);
+
+  // Persist theme across page switches
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("tn_theme", isOn ? "dark" : "light");
+  }, [isOn]);
+
+  const [showCopyToast, setShowCopyToast] = useState(false);
 
   const categoryList = useMemo(() => {
     const categories = Array.from(
@@ -263,24 +266,70 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   if (!currentNews) 
     return <div style={{ padding: 40 }}>No news selected for preview.</div>;
 
-  const { data } = currentNews;
+  const isEnglish = language === "en";
+  const baseData = currentNews.data || {};
+  const displayData = isEnglish
+    ? { ...baseData, ...(currentNews.dataEn || {}) }
+    : baseData;
+
+  const pickArray = (...candidates) => {
+    for (const item of candidates) {
+      if (Array.isArray(item)) return item;
+    }
+    return [];
+  };
+
+  const fullContent = pickArray(
+    isEnglish ? currentNews.dataEn?.fullContent : null,
+    isEnglish ? currentNews.data?.fullContent : null,
+    isEnglish ? currentNews.fullContentEn : null,
+    currentNews.data?.fullContent,
+    currentNews.fullContent
+  );
+
+  const containerOverlays = pickArray(
+    isEnglish ? currentNews.dataEn?.containerOverlays : null,
+    isEnglish ? currentNews.data?.containerOverlays : null,
+    isEnglish ? currentNews.containerOverlaysEn : null,
+    currentNews.data?.containerOverlays,
+    currentNews.containerOverlays
+  );
+  const totalContentItems = fullContent.length + containerOverlays.length;
+
+  const {
+    showBrandLoader,
+    brandFading,
+    visibleCount,
+    showSkeletons,
+    canLoadImages,
+  } = useProgressiveLoading({
+    totalItems: totalContentItems,
+    initialBatch: 2,
+    batchSize: 2,
+    enable: true,
+  });
+
+  const visibleFullCount = Math.min(fullContent.length, visibleCount);
+  const visibleContainerCount = Math.max(0, visibleCount - fullContent.length);
+  const remainingFullCount = Math.max(0, fullContent.length - visibleFullCount);
+  const remainingContainerCount = Math.max(0, containerOverlays.length - visibleContainerCount);
 
   const thumb = (() => {
-    if (!data?.thumbnail) return { url: luffy, isVideo: false };
+    if (!displayData?.thumbnail) return { url: luffy, isVideo: false };
 
     let url = null;
     let isVideo = false;
 
-    if (typeof data.thumbnail === "string") {
-      url = data.thumbnail;
+    if (typeof displayData.thumbnail === "string") {
+      url = displayData.thumbnail;
       isVideo =
-        data.thumbnail.includes(".mp4") ||
-        data.thumbnail.includes(".webm") ||
-        data.thumbnail.includes(".ogg") ||
-        data.thumbnail.startsWith("data:video/");
-    } else if (data.thumbnail instanceof File) {
-      url = URL.createObjectURL(data.thumbnail);
-      isVideo = data.thumbnail.type?.startsWith("video/");
+        displayData.thumbnail.includes(".mp4") ||
+        displayData.thumbnail.includes(".webm") ||
+        displayData.thumbnail.includes(".ogg") ||
+        displayData.thumbnail.startsWith("data:video/");
+    } else if (displayData.thumbnail instanceof File) {
+      url = URL.createObjectURL(displayData.thumbnail);
+      isVideo = displayData.thumbnail.type?.startsWith("video/");
     }
 
     return {
@@ -288,6 +337,113 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
       isVideo,
     };
   })();
+
+  const pageUrl =
+    typeof window !== "undefined" && currentNews?.id != null
+      ? `${window.location.origin}/preview/${currentNews.id}`
+      : "";
+
+  const resolveAbsoluteUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    if (typeof window === "undefined") return url;
+    try {
+      return new URL(url, window.location.origin).toString();
+    } catch (error) {
+      return url;
+    }
+  };
+
+  const shareImage = (() => {
+    const candidate = thumb.isVideo ? displayData?.thumbnail : thumb.url;
+    if (
+      !candidate ||
+      (typeof candidate === "string" &&
+        (candidate.startsWith("blob:") || candidate.startsWith("data:")))
+    ) {
+      return resolveAbsoluteUrl(luffy);
+    }
+    return resolveAbsoluteUrl(candidate);
+  })();
+
+  const shareTitle = displayData?.headline || "Tamilaka News";
+  const shareDescription =
+    displayData?.oneLiner || "Latest trending news from Tamil Nadu.";
+
+  useEffect(() => {
+    if (typeof document === "undefined" || !pageUrl) return;
+
+    const upsertMeta = (attr, key, content) => {
+      const selector = `meta[${attr}="${key}"]`;
+      let tag = document.head.querySelector(selector);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute(attr, key);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", content);
+    };
+
+    document.title = `${shareTitle} | Tamilaka News`;
+    upsertMeta("property", "og:title", shareTitle);
+    upsertMeta("property", "og:description", shareDescription);
+    upsertMeta("property", "og:image", shareImage);
+    upsertMeta("property", "og:url", pageUrl);
+    upsertMeta("property", "og:type", "article");
+    upsertMeta("property", "og:site_name", "Tamilaka News");
+  }, [pageUrl, shareTitle, shareDescription, shareImage]);
+
+  const handleCopyLink = async () => {
+    if (!pageUrl) return;
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      setShowCopyToast(true);
+    } catch (error) {
+      const textarea = document.createElement("textarea");
+      textarea.value = pageUrl;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setShowCopyToast(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!showCopyToast) return;
+    const timer = window.setTimeout(() => setShowCopyToast(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [showCopyToast]);
+
+  const shareLinks = [
+    {
+      id: "whatsapp",
+      label: "WhatsApp",
+      href: `https://wa.me/?text=${encodeURIComponent(
+        `${shareTitle}\n${pageUrl}`
+      )}`,
+      icon: <FaWhatsapp />,
+    },
+    {
+      id: "facebook",
+      label: "Facebook",
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+        pageUrl
+      )}`,
+      icon: <FaFacebookF />,
+    },
+    {
+      id: "x",
+      label: "X",
+      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+        shareTitle
+      )}&url=${encodeURIComponent(pageUrl)}`,
+      icon: <FaXTwitter />,
+    },
+  ];
 
   // Font size control functions
   const increaseFontSize = () => {
@@ -298,31 +454,62 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     setFontSize(prev => Math.max(prev - 10, 70)); // Min 70%
   };
 
+  const handleNavigatePage = (pageName) => {
+    const nextPage = String(pageName || "main").toLowerCase();
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("tn_activePage", nextPage);
+    }
+    navigate("/");
+  };
+
+  const renderSkeletonStack = (count) =>
+    Array.from({ length: count }).map((_, idx) => (
+      <div key={`skeleton-${idx}`} className="skeleton-card skeleton">
+        <div className="skeleton skeleton-line" style={{ width: "70%" }} />
+        <div className="skeleton skeleton-line" style={{ width: "90%" }} />
+        <div className="skeleton skeleton-line" style={{ width: "80%" }} />
+        <div className="skeleton skeleton-block" />
+      </div>
+    ));
+
   return (
-    <div className="prepge-main" style={{ ...themeStyle, minHeight: "100vh" }}>
-      <div className="pp-nav-ov">
-        <Navbarr
-          setIsOn={setIsOn}
-          isOn={isOn}
-          openSidebar={() => setSidebarOpen(true)}
-        />
-      </div>
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        openSidebar={() => setSidebarOpen(true)}
-      />
-      <div>
-        <br />
-      </div>
+    <>
+      <BrandLoader show={showBrandLoader} fading={brandFading} />
+      <ImageLoadProvider canLoad={canLoadImages}>
+        <div className={`prepge-main${isOn ? " dark" : ""}`} style={{ ...themeStyle, minHeight: "100vh" }}>
+          <div className="pp-nav-ov">
+            <Navbarr
+              setIsOn={setIsOn}
+              isOn={isOn}
+              openSidebar={() => setSidebarOpen(true)}
+              setActivePage={handleNavigatePage}
+            />
+          </div>
+          <Sidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            openSidebar={() => setSidebarOpen(true)}
+            isOn={isOn}
+            setIsOn={setIsOn}
+            setActivePage={handleNavigatePage}
+          />
+          {showCopyToast && (
+            <div className="copy-toast" role="status" aria-live="polite">
+              <IoInformationCircleOutline />
+              <span>News has copied</span>
+            </div>
+          )}
+          <div>
+            <br />
+          </div>
 
       <div className="Prevpge-main-con1">
         <div className="premain-con1-sub">
           <div className="main-news-cont">
             <div className="main-news-sbcon1" style={{ fontSize: `${fontSize}%` }}>
-              <div className="mannsw-sc-head">{data.headline}</div>
+              <div className="mannsw-sc-head">{displayData.headline}</div>
               <div className="mannsw-sc-oneliner">
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{data.oneLiner}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{displayData.oneLiner}
               </div>
               {!currentNews.hiddenElements?.thumbnail && (
                 <div className="mannsw-sc-tmbnl">
@@ -341,48 +528,78 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
                       Your browser does not support the video tag.
                     </video>
                   ) : (
-                    <img src={thumb.url} alt="thumbnail" />
+                    <LazyImage
+                      src={thumb.url}
+                      alt="thumbnail"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                      }}
+                    />
                   )}
                 </div>
               )}
               <div className="mannsw-sc-time">
                 {timeFun(currentNews.time || currentNews.createdAt || currentNews.updatedAt) || "No date available"}
               </div>
-              <div className="mannsw-lnksz">
-                <div style={styles.container}>
-                  {icons.map((item, index) => (
+              <div className="preview-action-bar">
+                <div className="preview-action-group">
+                  {shareLinks.map((item) => (
                     <a
-                      key={index}
+                      key={item.id}
                       href={item.href}
-                      style={styles.icon}
+                      className={`preview-icon-btn share-btn ${item.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={`Share on ${item.label}`}
+                      title={`Share on ${item.label}`}
                     >
                       {item.icon}
                     </a>
                   ))}
+                  <button
+                    type="button"
+                    className="preview-icon-btn share-btn copy"
+                    onClick={handleCopyLink}
+                    aria-label="Copy link"
+                    title="Copy link"
+                  >
+                    <FaLink />
+                  </button>
                 </div>
-                <div className="mannsw-ls-c2">
-                  <div 
-                    className="mannswls-c11-dec mannswbtn" 
+                <div className="preview-action-group">
+                  <button
+                    type="button"
+                    className="preview-icon-btn font-btn"
                     onClick={decreaseFontSize}
-                    style={{ cursor: 'pointer' }}
+                    aria-label="Decrease font size"
+                    title="Decrease font size"
                   >
                     <RxFontSize />
-                  </div>
-                  <div 
-                    className="mannswls-c11-inc mannswbtn" 
+                  </button>
+                  <button
+                    type="button"
+                    className="preview-icon-btn font-btn"
                     onClick={increaseFontSize}
-                    style={{ cursor: 'pointer' }}
+                    aria-label="Increase font size"
+                    title="Increase font size"
                   >
                     <BiFontSize />
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Render outside container boxes first */}
-            {currentNews.fullContent && currentNews.fullContent.length > 0 && (
+            {showSkeletons && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {renderSkeletonStack(Math.max(1, Math.min(2, totalContentItems)))}
+              </div>
+            )}
+
+            {!showSkeletons && visibleFullCount > 0 && (
               <div
                 style={{
                   display: "flex",
@@ -391,7 +608,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
                   fontSize: `${fontSize}%`,
                 }}
               >
-                {currentNews.fullContent.map((box) => (
+                {fullContent.slice(0, visibleFullCount).map((box) => (
                   <div key={box.id}>
                     {box.type === "paragraph" ? (
                       <ParagraphResponsive box={box} />
@@ -405,6 +622,12 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
               </div>
             )}
 
+            {!showSkeletons && remainingFullCount > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {renderSkeletonStack(remainingFullCount)}
+              </div>
+            )}
+
             {/* Render containers with responsive design */}
             <div
               className="main-news-content"
@@ -415,16 +638,24 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
                 fontSize: `${fontSize}%`,
               }}
             >
-              {currentNews.containerOverlays && currentNews.containerOverlays.length > 0 ? (
-                currentNews.containerOverlays.map((container) => (
-                  <ContainerView 
-                    key={container.id} 
-                    container={container} 
-                    isMobile={isMobile}
-                    fontSizePercent={fontSize}
-                  />
-                ))
-              ) : (
+              {showSkeletons && renderSkeletonStack(Math.max(1, Math.min(2, totalContentItems)))}
+
+              {!showSkeletons && visibleContainerCount > 0 && (
+                <>
+                  {containerOverlays.slice(0, visibleContainerCount).map((container) => (
+                    <ContainerView 
+                      key={container.id} 
+                      container={container} 
+                      isMobile={isMobile}
+                      fontSizePercent={fontSize}
+                    />
+                  ))}
+                </>
+              )}
+
+              {!showSkeletons && remainingContainerCount > 0 && renderSkeletonStack(remainingContainerCount)}
+
+              {!showSkeletons && containerOverlays.length === 0 && fullContent.length === 0 && (
                 <div style={{ padding: "20px", color: "#999", textAlign: "center" }}>
                   No content available
                 </div>
@@ -482,21 +713,23 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
         </div>
         <Footer/>
       </div>
-      {editMode && (
-        <NewsSectionEditModal
-          open={!!editSection}
-          sectionKey={editSection}
-          onClose={closeSettings}
-          categoryList={categoryList}
-          modalState={modalState}
-          setModalState={setModalState}
-          allNews={allNews}
-          newsSource={newsSource}
-          onSave={handleSaveSection}
-          filterNewsByCategory={filterNewsByCategory}
-        />
-      )}
-    </div>
+          {editMode && (
+            <NewsSectionEditModal
+              open={!!editSection}
+              sectionKey={editSection}
+              onClose={closeSettings}
+              categoryList={categoryList}
+              modalState={modalState}
+              setModalState={setModalState}
+              allNews={allNews}
+              newsSource={newsSource}
+              onSave={handleSaveSection}
+              filterNewsByCategory={filterNewsByCategory}
+            />
+          )}
+        </div>
+      </ImageLoadProvider>
+    </>
   );
 }
 
@@ -553,7 +786,7 @@ function NewsCard({
     <div style={{ width: 400, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ flex: 1 }}>{title}</div>
-        <img
+        <LazyImage
           src={image}
           style={{ width: 120, height: 80, objectFit: "cover" }}
           alt="news"
@@ -861,9 +1094,9 @@ function ImageResponsive({ box }) {
         overflow: "hidden",
       }}
     >
-      <img 
-        src={imgSrc} 
-        alt="news" 
+      <LazyImage
+        src={imgSrc}
+        alt="news"
         style={{
           width: "100%",
           height: "auto",
@@ -921,7 +1154,7 @@ function VideoResponsive({ box, isMobile = false }) {
           onClick={() => setIsPlaying(true)}
         >
           {videoData.thumbnail && (
-            <img
+            <LazyImage
               src={videoData.thumbnail}
               alt="video thumbnail"
               style={{

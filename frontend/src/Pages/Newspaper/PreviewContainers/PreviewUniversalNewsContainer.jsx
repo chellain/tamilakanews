@@ -4,6 +4,7 @@ import jwt from "../../../assets/jwt.jpg";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 import { useMobile } from "../Components2/PagePreview";
+import LazyImage from "../../Shared/LazyImage";
 
 const PreviewUniversalNewsContainer = ({
   catName,
@@ -121,7 +122,7 @@ const PreviewUniversalNewsContainer = ({
       );
     }
     return (
-      <img
+      <LazyImage
         src={renderData.media}
         alt=""
         style={{ width: "100%", height: "100%", objectFit: "cover" }}

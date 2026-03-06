@@ -3,6 +3,9 @@ import PreviewContainer from "./PreviewContainer";
 import PreviewSlider from "./PreviewSlider";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { findPageByName } from "../../../context/layoutHelpers";
+import useProgressiveLoading from "../../Shared/useProgressiveLoading";
+import BrandLoader from "../../Shared/BrandLoader";
+import { ImageLoadProvider } from "../../Shared/LazyImage";
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,45 +64,33 @@ export default function PagePreview({ pageName = "main" }) {
     [layout, pageName]
   );
 
-  if (loading) {
-    return (
-      <div
-        style={{
-          padding: "40px",
-          textAlign: "center",
-          color: "#999",
-          fontSize: "16px",
-        }}
-      >
-        Loading page...
-      </div>
-    );
-  }
-
-  if (!currentPage) {
-    return (
-      <div
-        style={{
-          padding: "40px",
-          textAlign: "center",
-          color: "#999",
-          fontSize: "16px",
-        }}
-      >
-        No content available for this page
-      </div>
-    );
-  }
-
-  const containers = currentPage.containers || [];
-  const sliders = currentPage.sliders || [];
-  const lines = currentPage.lines || [];
-  const pageSettings = currentPage.settings || {
+  const containers = currentPage?.containers || [];
+  const sliders = currentPage?.sliders || [];
+  const lines = currentPage?.lines || [];
+  const pageSettings = currentPage?.settings || {
     height: 600,
     gridColumns: 12,
     gap: 10,
     padding: 20,
   };
+
+  const initialBatch = 3;
+  const batchSize = 3;
+  const skeletonTotal = loading ? 6 : containers.length;
+
+  const {
+    showBrandLoader,
+    brandFading,
+    phase,
+    visibleCount,
+    showSkeletons,
+    canLoadImages,
+  } = useProgressiveLoading({
+    totalItems: skeletonTotal,
+    initialBatch,
+    batchSize,
+    enable: true,
+  });
 
   const padding = pageSettings.padding ?? 20;
 
@@ -111,29 +102,35 @@ export default function PagePreview({ pageName = "main" }) {
   const effectiveGridColumns = isMobile ? 1 : pageSettings.gridColumns;
   const effectiveHeight = isMobile ? "auto" : `${pageSettings.height}px`;
   const effectivePadding = isMobile ? "12px" : `${padding}px`;
+  const renderCount = Math.min(visibleCount, containers.length);
+  const visibleContainers = containers.slice(0, renderCount);
+  const remainingCount = Math.max(0, containers.length - renderCount);
 
   return (
-    // MobileContext is provided here so every nested PreviewContainer,
-    // NestedContainer overlay, or slider can read `isMobile` without
-    // prop-drilling through the entire tree.
-    <MobileContext.Provider value={isMobile}>
-      <div
-        style={{
-          height: effectiveHeight,
-          minHeight: isMobile ? "auto" : undefined,
-          padding: effectivePadding,
-          position: "relative",
-          // Keep overflow hidden on desktop to clip absolute-positioned lines.
-          // On mobile use visible so stacked content isn't clipped.
-          overflow: isMobile ? "visible" : "hidden",
-          width: "100%",
-          maxWidth: "1250px",
-          margin: "0 auto",
-          // Smooth transition when resizing between breakpoints
-          transition: "padding 0.2s ease",
-          boxSizing: "border-box",
-        }}
-      >
+    <>
+      <BrandLoader show={showBrandLoader} fading={brandFading} />
+      {/* MobileContext is provided here so every nested PreviewContainer,
+          NestedContainer overlay, or slider can read `isMobile` without
+          prop-drilling through the entire tree. */}
+      <MobileContext.Provider value={isMobile}>
+        <ImageLoadProvider canLoad={canLoadImages}>
+          <div
+            style={{
+              height: effectiveHeight,
+              minHeight: isMobile ? "auto" : undefined,
+              padding: effectivePadding,
+              position: "relative",
+              // Keep overflow hidden on desktop to clip absolute-positioned lines.
+              // On mobile use visible so stacked content isn't clipped.
+              overflow: isMobile ? "visible" : "hidden",
+              width: "100%",
+              maxWidth: "1250px",
+              margin: "0 auto",
+              // Smooth transition when resizing between breakpoints
+              transition: "padding 0.2s ease",
+              boxSizing: "border-box",
+            }}
+          >
         {/* ── Grid of containers ────────────────────────────────────────── */}
         <div
           style={{
@@ -146,47 +143,78 @@ export default function PagePreview({ pageName = "main" }) {
             zIndex: 1,
           }}
         >
-          {containers.map((container) => (
-            <PreviewContainer
-              key={container.id}
-              id={container.id}
-              catName={pageName}
-              // isMobile is forwarded as a prop for components that accept it
-              // directly, AND is available via useMobile() for deeper descendants.
-              isMobile={isMobile}
-            />
-          ))}
+          {showSkeletons &&
+            Array.from({ length: Math.min(initialBatch, skeletonTotal) }).map((_, idx) => (
+              <div key={`skeleton-${idx}`} className="skeleton-card skeleton">
+                <div className="skeleton skeleton-line" style={{ width: "60%" }} />
+                <div className="skeleton skeleton-line" style={{ width: "90%" }} />
+                <div className="skeleton skeleton-line" style={{ width: "80%" }} />
+                <div className="skeleton skeleton-block" />
+              </div>
+            ))}
+
+          {!showSkeletons &&
+            visibleContainers.map((container) => (
+              <PreviewContainer
+                key={container.id}
+                id={container.id}
+                catName={pageName}
+                // isMobile is forwarded as a prop for components that accept it
+                // directly, AND is available via useMobile() for deeper descendants.
+                isMobile={isMobile}
+              />
+            ))}
+
+          {!showSkeletons &&
+            remainingCount > 0 &&
+            Array.from({ length: remainingCount }).map((_, idx) => (
+              <div key={`pending-${idx}`} className="skeleton-card skeleton">
+                <div className="skeleton skeleton-line" style={{ width: "55%" }} />
+                <div className="skeleton skeleton-line" style={{ width: "85%" }} />
+                <div className="skeleton skeleton-line" style={{ width: "70%" }} />
+                <div className="skeleton skeleton-block" />
+              </div>
+            ))}
         </div>
 
         {/* ── Page-level sliders ────────────────────────────────────────── */}
-        {sliders.map((slider) => (
-          <div
-            key={slider.id}
-            style={{
-              marginBottom: `${pageSettings.gap}px`,
-              position: "relative",
-              zIndex: 2,
-              // Sliders scroll horizontally on desktop; on mobile we let them
-              // scroll naturally within their own container.
-              overflowX: isMobile ? "auto" : undefined,
-            }}
-          >
-            <PreviewSlider
-              id={slider.id}
-              catName={pageName}
-              containerId={null}
-              isNested={false}
-              parentContainerId={null}
-              isMobile={isMobile}
-            />
+        {phase < 2 && sliders.length > 0 && (
+          <div className="skeleton-card skeleton" style={{ marginBottom: `${pageSettings.gap}px` }}>
+            <div className="skeleton skeleton-line" style={{ width: "40%" }} />
+            <div className="skeleton skeleton-block" style={{ height: "200px" }} />
           </div>
-        ))}
+        )}
+
+        {phase >= 2 &&
+          sliders.map((slider) => (
+            <div
+              key={slider.id}
+              style={{
+                marginBottom: `${pageSettings.gap}px`,
+                position: "relative",
+                zIndex: 2,
+                // Sliders scroll horizontally on desktop; on mobile we let them
+                // scroll naturally within their own container.
+                overflowX: isMobile ? "auto" : undefined,
+              }}
+            >
+              <PreviewSlider
+                id={slider.id}
+                catName={pageName}
+                containerId={null}
+                isNested={false}
+                parentContainerId={null}
+                isMobile={isMobile}
+              />
+            </div>
+          ))}
 
         {/* ── Page-level lines (desktop only) ──────────────────────────── */}
         {/* Lines are absolutely positioned decorative elements designed for the
             fixed-height desktop canvas. They have no meaningful representation
             in a reflowed single-column mobile layout, so we suppress them. */}
         {!isMobile &&
+          phase >= 1 &&
           lines.map((line) => {
             const isHorizontal = line.orientation === "horizontal";
             const bg =
@@ -212,7 +240,9 @@ export default function PagePreview({ pageName = "main" }) {
           })}
 
         {/* ── Empty state ───────────────────────────────────────────────── */}
-        {containers.length === 0 &&
+        {!loading &&
+          !currentPage &&
+          containers.length === 0 &&
           sliders.length === 0 &&
           lines.length === 0 && (
             <div
@@ -223,10 +253,12 @@ export default function PagePreview({ pageName = "main" }) {
                 fontSize: "16px",
               }}
             >
-              No content has been added to this page yet
+              No content available for this page
             </div>
           )}
-      </div>
-    </MobileContext.Provider>
+        </div>
+        </ImageLoadProvider>
+      </MobileContext.Provider>
+    </>
   );
 }

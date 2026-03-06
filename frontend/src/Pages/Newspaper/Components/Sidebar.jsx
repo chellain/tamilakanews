@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { IoClose } from "react-icons/io5";
+import { IoClose, IoSunnySharp } from "react-icons/io5";
 import logo from "../../../assets/logo1.png";
 import { IoSearchSharp } from "react-icons/io5";
 import { BiWorld } from "react-icons/bi";
+import { HiMiniMoon } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useSiteData } from "../../../context/SiteDataContext";
 
@@ -29,12 +30,13 @@ function HighlightText({ text, query }) {
   );
 }
 
-export default function Sidebar({ open, onClose, activePage, setActivePage }) {
+export default function Sidebar({ open, onClose, activePage, setActivePage, isOn, setIsOn }) {
   const [active, setActive] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchSuggestions, setSearchSuggestions] = useState({ pages: [], news: [] });
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [langPopupOpen, setLangPopupOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const navigate = useNavigate();
   const searchContainerRef = useRef(null);
@@ -79,6 +81,12 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Reset search when sidebar closes
@@ -192,6 +200,7 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
     searchSuggestions.pages.length > 0 || searchSuggestions.news.length > 0;
 
   if (!open) return null;
+  const isDark = !!isOn;
 
   return (
     <>
@@ -199,7 +208,7 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
       <div className="sb-overlay" onClick={onClose}></div>
 
       {/* Sidebar */}
-      <div className="sb-container">
+      <div className={`sb-container${isDark ? " sb-dark" : ""}`}>
         <div className="nav-c1-logo-v2" style={{ position: "relative" }}>
           <div className="nav-c1l-t1-v2">
             <img src={logo} />
@@ -214,6 +223,76 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
 
         {/* Search bar with suggestions */}
         <div className="sb-header">
+          {isMobile && (
+          <div className="sb-mobile-actions">
+            <div ref={globeRef} className="sb-lang">
+              <button
+                type="button"
+                className="sb-lang-toggle"
+                onClick={() => setLangPopupOpen((prev) => !prev)}
+                aria-label="Change language"
+              >
+                <BiWorld />
+              </button>
+              {langPopupOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    left: 0,
+                    backgroundColor: isDark ? "#1f1f1f" : "white",
+                    border: `1px solid ${isDark ? "#333" : "#f9c0e0"}`,
+                    borderRadius: "10px",
+                    boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+                    zIndex: 400,
+                    minWidth: "140px",
+                    overflow: "hidden",
+                  }}
+                >
+                  {[
+                    { code: "en", label: "English", sublabel: "English" },
+                    { code: "ta", label: "தமிழ்", sublabel: "Tamil" },
+                  ].map(({ code, label, sublabel }) => {
+                    const isActive = code === language;
+                    return (
+                      <div
+                        key={code}
+                        onClick={() => handleLanguageSelect(code)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "6px 10px",
+                          cursor: "pointer",
+                          background: isActive ? "#fff0f8" : "transparent",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = isDark ? "#2a2a2a" : "#fdf0f8"; }}
+                        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <div>
+                          <div style={{ fontSize: "14px", fontWeight: isActive ? 600 : 400, color: isActive ? "#e91e8c" : (isDark ? "#f4f4f4" : "#333") }}>{label}</div>
+                          <div style={{ fontSize: "11px", color: "#aaa" }}>{sublabel}</div>
+                        </div>
+                        {isActive && (
+                          <span style={{ color: "#e91e8c", fontSize: "14px", fontWeight: 700 }}>âœ“</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              className="sb-theme-toggle"
+              onClick={() => setIsOn && setIsOn(!isOn)}
+              aria-label={isOn ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {isOn ? <IoSunnySharp /> : <HiMiniMoon />}
+            </button>
+          </div>
+          )}
           <div className="sb-search-row">
             <div
               ref={searchContainerRef}
@@ -252,8 +331,8 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
                   top: "100%",
                   left: 0,
                   right: 0,
-                  backgroundColor: "white",
-                  border: "1px solid #fce4f3",
+                  backgroundColor: isDark ? "#1f1f1f" : "white",
+                  border: `1px solid ${isDark ? "#333" : "#fce4f3"}`,
                   borderTop: "none",
                   borderRadius: "0 0 8px 8px",
                   boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
@@ -275,13 +354,13 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
                           gap: "10px",
                           padding: "9px 12px",
                           cursor: "pointer",
-                          borderBottom: "1px solid #fce4f3",
+                          borderBottom: `1px solid ${isDark ? "#333" : "#fce4f3"}`,
                           fontSize: "14px",
                           transition: "background 0.15s",
-                          color: "#222",
+                          color: isDark ? "#f4f4f4" : "#222",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f8")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? "#2a2a2a" : "#fff0f8")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = isDark ? "#1f1f1f" : "white")}
                       >
                         <span style={{ color: "#e91e8c", fontSize: "13px", minWidth: "16px" }}>
                           ☰
@@ -305,13 +384,13 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
                           gap: "10px",
                           padding: "9px 12px",
                           cursor: "pointer",
-                          borderBottom: "1px solid #fce4f3",
+                          borderBottom: `1px solid ${isDark ? "#333" : "#fce4f3"}`,
                           fontSize: "13px",
                           transition: "background 0.15s",
-                          color: "#222",
+                          color: isDark ? "#f4f4f4" : "#222",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f8")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? "#2a2a2a" : "#fff0f8")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = isDark ? "#1f1f1f" : "white")}
                       >
                         <span style={{ color: "#aaa", fontSize: "13px", minWidth: "16px", paddingTop: "1px" }}>
                           🗞
@@ -341,64 +420,6 @@ export default function Sidebar({ open, onClose, activePage, setActivePage }) {
             )}
           </div>
 
-          <div ref={globeRef} className="sb-lang">
-            <button
-              type="button"
-              className="sb-lang-toggle"
-              onClick={() => setLangPopupOpen((prev) => !prev)}
-              aria-label="Change language"
-            >
-              <BiWorld />
-            </button>
-            {langPopupOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 8px)",
-                  right: "0",
-                  backgroundColor: "white",
-                  border: "1px solid #f9c0e0",
-                  borderRadius: "10px",
-                  boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
-                  zIndex: 400,
-                  minWidth: "140px",
-                  overflow: "hidden",
-                }}
-              >
-                {[
-                  { code: "en", label: "English", sublabel: "English" },
-                  { code: "ta", label: "தமிழ்", sublabel: "Tamil" },
-                ].map(({ code, label, sublabel }) => {
-                  const isActive = code === language;
-                  return (
-                    <div
-                      key={code}
-                      onClick={() => handleLanguageSelect(code)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "6px 10px",
-                        cursor: "pointer",
-                        background: isActive ? "#fff0f8" : "white",
-                        transition: "background 0.15s",
-                      }}
-                      onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "#fdf0f8"; }}
-                      onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "white"; }}
-                    >
-                      <div>
-                        <div style={{ fontSize: "14px", fontWeight: isActive ? 600 : 400, color: isActive ? "#e91e8c" : "#333" }}>{label}</div>
-                        <div style={{ fontSize: "11px", color: "#aaa" }}>{sublabel}</div>
-                      </div>
-                      {isActive && (
-                        <span style={{ color: "#e91e8c", fontSize: "14px", fontWeight: 700 }}>âœ“</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
           </div>
         </div>
 

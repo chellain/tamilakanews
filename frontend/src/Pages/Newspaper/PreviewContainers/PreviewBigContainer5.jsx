@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import timeFun from "../Containers_/timeFun";
 import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
+import LazyImage from "../../Shared/LazyImage";
 
 const PreviewBigContainer5 = ({
   newsId,
@@ -57,7 +58,7 @@ const PreviewBigContainer5 = ({
       );
     }
     return (
-      <img
+      <LazyImage
         src={renderData.media}
         alt=""
         style={{ width: "100%", height: "100%", objectFit: "cover" }}

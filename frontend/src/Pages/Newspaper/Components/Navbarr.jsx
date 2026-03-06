@@ -226,7 +226,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
     if (setActivePage) {
       setActivePage("main");
     }
-    navigate("/Newspaper");
+    navigate("/");
   };
 
   const handleSearchChange = (e) => {

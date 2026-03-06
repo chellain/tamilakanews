@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
 import timeFun from "./timeFun";
+import LazyImage from "../../Shared/LazyImage";
 
 const BigNewsContainer4B = ({
   newsId = null,
@@ -88,7 +89,7 @@ const BigNewsContainer4B = ({
       {version === 1 && (
         <>
           <div className="epbn4b-img">
-            <img src={renderData.image} alt="" />
+            <LazyImage src={renderData.image} alt="" />
           </div>
           <div className="epbn4b-hdln">{renderData.headline}</div>
           <div className="epn-tm">{renderData.time}</div>
@@ -99,7 +100,7 @@ const BigNewsContainer4B = ({
         <>
           <div className="epbn4b-hdln">{renderData.headline}</div>
           <div className="epbn4b-img">
-            <img src={renderData.image} alt="" />
+            <LazyImage src={renderData.image} alt="" />
           </div>
           <div className="epn-tm">{renderData.time}</div>
         </>

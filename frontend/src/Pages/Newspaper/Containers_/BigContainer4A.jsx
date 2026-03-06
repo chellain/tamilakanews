@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
 import timeFun  from "./timeFun";
+import LazyImage from "../../Shared/LazyImage";
 
 const BigNewsContainer4A = ({
   newsId = null,
@@ -91,7 +92,7 @@ const newsToShow = (language === "en" ? translatedNews : allNews) || [];
       {version === 1 && (
         <>
           <div className="epbn4-img">
-            <img src={renderData.image} alt="" />
+            <LazyImage src={renderData.image} alt="" />
           </div>
           <div className="epbn4-hdln">{renderData.headline}</div>
           <div className="epn-tm">{renderData.time}</div>
@@ -102,7 +103,7 @@ const newsToShow = (language === "en" ? translatedNews : allNews) || [];
         <>
           <div className="epbn4-hdln">{renderData.headline}</div>
           <div className="epbn4-img">
-            <img src={renderData.image} alt="" />
+            <LazyImage src={renderData.image} alt="" />
           </div>
           <div className="epn-tm">{renderData.time}</div>
         </>

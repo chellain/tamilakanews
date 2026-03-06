@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import jwt from "../../../assets/jwt.jpg";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
+import LazyImage from "../../Shared/LazyImage";
 
 const PreviewNorContainer5 = ({
   newsId,
@@ -111,7 +112,7 @@ const PreviewNorContainer5 = ({
             </div>
             <div className="ep-nm22-sbc" style={maincontstyle}>
               <div className="epnn22-img" style={imgoverly}>
-                <img style={imgstyle} src={renderData.image} alt="" />
+                <LazyImage style={imgstyle} src={renderData.image} alt="" />
               </div>
               <div className="ep-nm22sbc-c1">
                 <div
@@ -155,7 +156,7 @@ const PreviewNorContainer5 = ({
                 </div>
               </div>
               <div className="epnn22-img" style={imgoverly} >
-                <img style={imgstyle} src={renderData.image} alt="" />
+                <LazyImage style={imgstyle} src={renderData.image} alt="" />
               </div>
             </div>
           </>

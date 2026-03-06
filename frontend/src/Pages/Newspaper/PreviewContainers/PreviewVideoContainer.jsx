@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { FaPlay } from "react-icons/fa";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { useMobile } from "../Components2/PagePreview";
+import LazyImage from "../../Shared/LazyImage";
 import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 
 /**
@@ -134,7 +135,7 @@ const PreviewVideoContainer = ({
             background: "#000",
           }}
         >
-          <img
+          <LazyImage
             src={videoData.thumbnail}
             alt="Video thumbnail"
             style={{
