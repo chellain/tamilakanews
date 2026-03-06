@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
 
-const BRAND_LOADER_MS = 3000;
-const BRAND_FADE_MS = 600;
-
 export default function useProgressiveLoading({
   totalItems = 0,
   initialBatch = 3,
@@ -11,20 +8,33 @@ export default function useProgressiveLoading({
 }) {
   const [showBrandLoader, setShowBrandLoader] = useState(true);
   const [brandFading, setBrandFading] = useState(false);
+  const [hasBootstrapped, setHasBootstrapped] = useState(false);
   const [phase, setPhase] = useState(0);
   const [visibleCount, setVisibleCount] = useState(0);
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setBrandFading(true), BRAND_LOADER_MS);
-    const hideTimer = setTimeout(
-      () => setShowBrandLoader(false),
-      BRAND_LOADER_MS + BRAND_FADE_MS
-    );
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(hideTimer);
+    if (!enable) {
+      setShowBrandLoader(false);
+      setBrandFading(false);
+      setHasBootstrapped(true);
+      return;
+    }
+
+    if (hasBootstrapped) return;
+
+    const hide = () => {
+      setBrandFading(false);
+      setShowBrandLoader(false);
+      setHasBootstrapped(true);
     };
-  }, []);
+
+    if (typeof window !== "undefined" && window.requestAnimationFrame) {
+      const raf = window.requestAnimationFrame(hide);
+      return () => window.cancelAnimationFrame(raf);
+    }
+
+    hide();
+  }, [enable, hasBootstrapped]);
 
   useEffect(() => {
     if (!enable) {
