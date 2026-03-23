@@ -6,6 +6,7 @@ import { BiWorld } from "react-icons/bi";
 import { HiMiniMoon } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useSiteData } from "../../../context/SiteDataContext";
+import { buildNewsPath, buildSectionPath } from "../../../utils/paths";
 
 // Utility: highlight matching text within a string
 function HighlightText({ text, query }) {
@@ -56,12 +57,16 @@ export default function Sidebar({ open, onClose, activePage, setActivePage, isOn
   };
 
   const handlePageClick = (pageName) => {
-    setActivePage(pageName.toLowerCase());
+    const nextPage = pageName.toLowerCase();
+    setActivePage(nextPage);
+    navigate(buildSectionPath(nextPage));
     onClose();
   };
 
   const handleDistrictClick = (districtName) => {
-    setActivePage(districtName.toLowerCase());
+    const nextPage = districtName.toLowerCase();
+    setActivePage(nextPage);
+    navigate(buildSectionPath(nextPage));
     onClose();
   };
 
@@ -183,7 +188,9 @@ export default function Sidebar({ open, onClose, activePage, setActivePage, isOn
     setShowSuggestions(false);
     setSearchQuery("");
     if (setActivePage) {
-      setActivePage(suggestion.engName.toLowerCase());
+      const nextPage = suggestion.engName.toLowerCase();
+      setActivePage(nextPage);
+      navigate(buildSectionPath(nextPage));
     }
     onClose();
   };
@@ -193,7 +200,7 @@ export default function Sidebar({ open, onClose, activePage, setActivePage, isOn
     setShowSuggestions(false);
     setSearchQuery("");
     onClose();
-    navigate(`/preview/${newsItem.id}`);
+    navigate(buildNewsPath(newsItem.id, newsItem.headline));
   };
 
   const hasSuggestions =

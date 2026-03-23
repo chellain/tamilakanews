@@ -3,6 +3,7 @@ import timeFun from "../Containers_/timeFun";
 import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
 import LazyImage from "../../Shared/LazyImage";
+import { buildNewsPath } from "../../../utils/paths";
 
 const PreviewNorContainer1 = ({
   newsId,
@@ -40,7 +41,7 @@ const PreviewNorContainer1 = ({
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(`/preview/${newsId}`);
+    navigate(buildNewsPath(newsId, renderData.headline));
   };
 
   return (

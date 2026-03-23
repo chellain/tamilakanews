@@ -40,9 +40,10 @@ import { updateNewsPageConfig } from "../../Api/newsPageApi";
 import useProgressiveLoading from "../Shared/useProgressiveLoading";
 import BrandLoader from "../Shared/BrandLoader";
 import LazyImage, { ImageLoadProvider } from "../Shared/LazyImage";
+import { buildNewsPath } from "../../utils/paths";
 
 export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
-  const { id } = useParams();
+  const { id, slug } = useParams();
   const navigate = useNavigate();
   const {
     allNews,
@@ -140,6 +141,15 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     newsSource.find((news) => news.id === Number(activeId)) ||
     allNews.find((news) => news.id === Number(activeId));
   const MLayout = 1;
+
+  useEffect(() => {
+    if (!currentNews) return;
+    const expectedPath = buildNewsPath(currentNews);
+    const expectedSlug = expectedPath.split("/").pop();
+    if (expectedSlug && expectedSlug !== slug) {
+      navigate(expectedPath, { replace: true });
+    }
+  }, [currentNews, slug, navigate]);
 
   const filterNewsByCategory = (category, list) => {
     if (!category) return list;
@@ -342,7 +352,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
   const pageUrl =
     typeof window !== "undefined" && currentNews?.id != null
-      ? `${window.location.origin}/news/${currentNews.id}`
+      ? `${window.location.origin}${buildNewsPath(currentNews)}`
       : "";
 
   const resolveAbsoluteUrl = (url) => {

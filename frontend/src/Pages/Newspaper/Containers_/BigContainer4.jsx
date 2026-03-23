@@ -3,6 +3,7 @@ import { useSiteData } from "../../../context/SiteDataContext";
 import jwt from "../../../assets/jwt.jpg";
 import timeFun  from "./timeFun";
 import LazyImage from "../../Shared/LazyImage";
+import { buildNewsPath } from "../../../utils/paths";
 
 const BigNewsContainer4 = ({
   newsId = null,
@@ -40,7 +41,7 @@ const BigNewsContainer4 = ({
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(`/preview/${newsId}`);
+    navigate(buildNewsPath(newsId, renderData.headline));
   };
 
   return (

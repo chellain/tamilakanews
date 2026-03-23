@@ -6,6 +6,7 @@ import { RiInstagramFill } from "react-icons/ri";
 import { FaYoutube } from "react-icons/fa";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { useNavigate } from "react-router-dom";
+import { buildSectionPath } from "../../../utils/paths";
 
 export default function Footer({ onNavigatePage }) {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export default function Footer({ onNavigatePage }) {
     if (typeof onNavigatePage === "function") {
       onNavigatePage(target);
     }
-    navigate("/Newspaper");
+    navigate(buildSectionPath(target));
   };
 
   useEffect(() => {

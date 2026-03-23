@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useSiteData } from "../../../context/SiteDataContext";
 import timeFun from "../../Newspaper/Containers_/timeFun";
+import { buildNewsPath } from "../../../utils/paths";
 
 const PreviewNorContainer4B = ({ newsId, showSeparator = false }) => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ const PreviewNorContainer4B = ({ newsId, showSeparator = false }) => {
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(`/preview/${newsId}`);
+    navigate(buildNewsPath(newsId, news?.data?.headline || renderData.content));
   };
 
   return (

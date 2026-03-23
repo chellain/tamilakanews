@@ -58,7 +58,7 @@ export default function PreviewContainer({
   // without any extra prop forwarding.
   const isMobile = useMobile();
 
-  const { layout } = useSiteData();
+  const { layout, language } = useSiteData();
   const containerData = findContainer({
     layout,
     catName,
@@ -71,7 +71,12 @@ export default function PreviewContainer({
 
   const grid = containerData.grid || { columns: 2, gap: 10 };
   const headerEnabled = containerData.header?.enabled || false;
-  const headerTitle = containerData.header?.title || "";
+  const headerTam = containerData.header?.tam ?? containerData.header?.title ?? "";
+  const headerEng = containerData.header?.eng ?? "";
+  const headerTitle =
+    language === "en"
+      ? (headerEng || headerTam || "")
+      : (headerTam || "");
   const spacing = containerData.spacing || { padding: 10, margin: 0 };
   const nestedContainers = containerData.nestedContainers || [];
   const items = containerData.items || [];

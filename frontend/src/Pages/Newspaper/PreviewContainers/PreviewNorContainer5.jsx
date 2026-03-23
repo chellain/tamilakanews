@@ -5,6 +5,7 @@ import jwt from "../../../assets/jwt.jpg";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 import LazyImage from "../../Shared/LazyImage";
+import { buildNewsPath } from "../../../utils/paths";
 
 const PreviewNorContainer5 = ({
   newsId,
@@ -85,7 +86,7 @@ const PreviewNorContainer5 = ({
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(`/preview/${newsId}`);
+    navigate(buildNewsPath(newsId, renderData.headline));
   };
 
   // FIX: Pink text on hover

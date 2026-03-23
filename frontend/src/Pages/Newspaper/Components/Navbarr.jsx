@@ -12,6 +12,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react
 import { useNavigate } from "react-router-dom";
 import { getTodayInTamil } from './getTodayInTamil.js';
 import { useSiteData } from "../../../context/SiteDataContext";
+import { buildNewsPath, buildSectionPath } from "../../../utils/paths";
 // Utility: highlight matching text within a string
 function HighlightText({ text, query }) {
   if (!query || !text) return <span>{text}</span>;
@@ -206,11 +207,15 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
   }, [langPopupOpen]);
 
   const handlePageClick = (pageName) => {
-    setActivePage(pageName.toLowerCase());
+    const nextPage = pageName.toLowerCase();
+    setActivePage(nextPage);
+    navigate(buildSectionPath(nextPage));
   };
 
   const handleDistrictClick = (districtName) => {
-    setActivePage(districtName.toLowerCase());
+    const nextPage = districtName.toLowerCase();
+    setActivePage(nextPage);
+    navigate(buildSectionPath(nextPage));
     setDistrictDropdownOpen(false);
   };
 
@@ -246,7 +251,9 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
     setSearchQuery("");
     setSearchOpen(false);
     if (setActivePage) {
-      setActivePage(suggestion.engName.toLowerCase());
+      const nextPage = suggestion.engName.toLowerCase();
+      setActivePage(nextPage);
+      navigate(buildSectionPath(nextPage));
     }
   };
 
@@ -255,7 +262,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
     setShowSuggestions(false);
     setSearchQuery("");
     setSearchOpen(false);
-    navigate(`/news/${newsItem.id}`);
+    navigate(buildNewsPath(newsItem.id, newsItem.headline));
   };
 
   const hasSuggestions =

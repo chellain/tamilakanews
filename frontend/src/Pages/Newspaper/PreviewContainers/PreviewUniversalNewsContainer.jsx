@@ -5,6 +5,7 @@ import { useSiteData } from "../../../context/SiteDataContext";
 import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 import { useMobile } from "../Components2/PagePreview";
 import LazyImage from "../../Shared/LazyImage";
+import { buildNewsPath } from "../../../utils/paths";
 
 const PreviewUniversalNewsContainer = ({
   catName,
@@ -81,7 +82,7 @@ const PreviewUniversalNewsContainer = ({
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(`/preview/${newsId}`);
+    navigate(buildNewsPath(newsId, renderData.headline));
   };
 
   const imageStyle = {

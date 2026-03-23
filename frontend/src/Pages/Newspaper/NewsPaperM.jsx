@@ -6,14 +6,20 @@ import "./PreviewContainers/previewcont.css";
 import Footer from "./Components/Footer";
 import Sidebar from "./Components/Sidebar";
 import PagePreview from "./Components2/PagePreview";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { buildSectionPath, sectionNameFromPath } from "../../utils/paths";
 
 export default function NewsPaperM() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { section } = useParams();
   const [isOn, setIsOn] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("tn_theme") === "dark";
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState(() => {
+    if (section) return sectionNameFromPath(section);
     if (typeof window === "undefined") return "main";
     return window.localStorage.getItem("tn_activePage") || "main";
   });
@@ -51,6 +57,20 @@ export default function NewsPaperM() {
     if (typeof window === "undefined") return;
     window.localStorage.setItem("tn_activePage", activePage);
   }, [activePage]);
+
+  useEffect(() => {
+    const nextPage = section ? sectionNameFromPath(section) : "main";
+    if (nextPage !== activePage) {
+      setActivePage(nextPage);
+    }
+  }, [section]);
+
+  useEffect(() => {
+    const targetPath = buildSectionPath(activePage);
+    if (location.pathname !== targetPath) {
+      navigate(targetPath, { replace: true });
+    }
+  }, [activePage, location.pathname, navigate]);
 
   return (
     <div style={{ ...themeStyle, width: "100%", minHeight: "100vh", margin: 0, padding: 0 }}>

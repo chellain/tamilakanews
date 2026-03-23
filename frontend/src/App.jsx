@@ -35,7 +35,9 @@ function AppContent() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<NewsPaperM />} />
-          <Route path="/news/:id" element={<PreviewPage />} />
+          <Route path="/section/:section" element={<NewsPaperM />} />
+          <Route path="/preview/:id/:slug?" element={<PreviewPage />} />
+          <Route path="/news/:id/:slug?" element={<PreviewPage />} />
         </Routes>
       </BrowserRouter>
     </>
