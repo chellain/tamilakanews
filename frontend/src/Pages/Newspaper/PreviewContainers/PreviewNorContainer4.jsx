@@ -36,7 +36,7 @@ const PreviewNorContainer4 = ({ newsId, version = 1, showSeparator = false }) =>
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(`/preview/${newsId}`);
+    navigate(`/news/${newsId}`);
   };
 
   return (

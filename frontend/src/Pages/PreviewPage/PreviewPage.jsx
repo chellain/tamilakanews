@@ -133,10 +133,6 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  if (loading) {
-    return <div style={{ padding: 40 }}>Loading news...</div>;
-  }
-
   const newsSource = language === "en" && translatedNews?.length ? translatedNews : allNews;
   const fallbackId = allNews.length > 0 ? allNews[0].id : null;
   const activeId = forcedNewsId ?? (id ? Number(id) : null) ?? fallbackId;
@@ -263,13 +259,11 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     }
   };
   
-  if (!currentNews) 
-    return <div style={{ padding: 40 }}>No news selected for preview.</div>;
-
+  const safeNews = currentNews || { data: {}, dataEn: {}, fullContent: [], containerOverlays: [] };
   const isEnglish = language === "en";
-  const baseData = currentNews.data || {};
+  const baseData = safeNews.data || {};
   const displayData = isEnglish
-    ? { ...baseData, ...(currentNews.dataEn || {}) }
+    ? { ...baseData, ...(safeNews.dataEn || {}) }
     : baseData;
 
   const pickArray = (...candidates) => {
@@ -309,6 +303,14 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     enable: true,
   });
 
+  if (loading) {
+    return <div style={{ padding: 40 }}>Loading news...</div>;
+  }
+
+  if (!currentNews) {
+    return <div style={{ padding: 40 }}>No news selected for preview.</div>;
+  }
+
   const visibleFullCount = Math.min(fullContent.length, visibleCount);
   const visibleContainerCount = Math.max(0, visibleCount - fullContent.length);
   const remainingFullCount = Math.max(0, fullContent.length - visibleFullCount);
@@ -340,7 +342,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
   const pageUrl =
     typeof window !== "undefined" && currentNews?.id != null
-      ? `${window.location.origin}/preview/${currentNews.id}`
+      ? `${window.location.origin}/news/${currentNews.id}`
       : "";
 
   const resolveAbsoluteUrl = (url) => {

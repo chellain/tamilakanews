@@ -255,7 +255,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
     setShowSuggestions(false);
     setSearchQuery("");
     setSearchOpen(false);
-    navigate(`/preview/${newsItem.id}`);
+    navigate(`/news/${newsItem.id}`);
   };
 
   const hasSuggestions =
