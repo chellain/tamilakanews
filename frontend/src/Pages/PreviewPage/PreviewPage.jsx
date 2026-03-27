@@ -284,19 +284,19 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   };
 
   const fullContent = pickArray(
-    isEnglish ? currentNews.dataEn?.fullContent : null,
-    isEnglish ? currentNews.data?.fullContent : null,
-    isEnglish ? currentNews.fullContentEn : null,
-    currentNews.data?.fullContent,
-    currentNews.fullContent
+    isEnglish ? safeNews.dataEn?.fullContent : null,
+    isEnglish ? safeNews.data?.fullContent : null,
+    isEnglish ? safeNews.fullContentEn : null,
+    safeNews.data?.fullContent,
+    safeNews.fullContent
   );
 
   const containerOverlays = pickArray(
-    isEnglish ? currentNews.dataEn?.containerOverlays : null,
-    isEnglish ? currentNews.data?.containerOverlays : null,
-    isEnglish ? currentNews.containerOverlaysEn : null,
-    currentNews.data?.containerOverlays,
-    currentNews.containerOverlays
+    isEnglish ? safeNews.dataEn?.containerOverlays : null,
+    isEnglish ? safeNews.data?.containerOverlays : null,
+    isEnglish ? safeNews.containerOverlaysEn : null,
+    safeNews.data?.containerOverlays,
+    safeNews.containerOverlays
   );
   const totalContentItems = fullContent.length + containerOverlays.length;
 
