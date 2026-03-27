@@ -21,27 +21,6 @@ export const toSlug = (text, maxWords = 8) => {
   return slug || "news";
 };
 
-export const buildNewsPath = (newsOrId, headline, options = {}) => {
-  let id = null;
-  let title = "";
-
-  if (newsOrId && typeof newsOrId === "object") {
-    id = newsOrId.id ?? newsOrId.newsId ?? null;
-    title =
-      newsOrId.data?.headline ||
-      newsOrId.title ||
-      headline ||
-      "";
-  } else {
-    id = newsOrId;
-    title = headline || "";
-  }
-
-  const maxWords = options.maxWords ?? 8;
-  const slug = toSlug(title, maxWords);
-  return `/news/${id}/${slug}`;
-};
-
 export const toSectionSlug = (name) => {
   if (!name) return "";
   const normalized = stripDiacritics(String(name).trim());
@@ -50,6 +29,45 @@ export const toSectionSlug = (name) => {
     .replace(/[^a-z0-9\u0B80-\u0BFF]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-");
+};
+
+const normalizeCategory = (category) => {
+  if (Array.isArray(category)) {
+    const first = category.find((item) => item && String(item).trim().length > 0);
+    return first || "";
+  }
+  return category || "";
+};
+
+export const getNewsCategory = (news) => {
+  if (!news) return "";
+  const fromData = news.data?.zonal ?? news.data?.category ?? news.data?.section ?? news.category;
+  const fromDataEn = news.dataEn?.zonal ?? news.dataEn?.category ?? news.dataEn?.section;
+  return normalizeCategory(fromData || fromDataEn);
+};
+
+export const buildNewsPath = (newsOrId, headline, options = {}) => {
+  let title = "";
+  let category = options.category;
+
+  if (newsOrId && typeof newsOrId === "object") {
+    title =
+      newsOrId.data?.headline ||
+      newsOrId.dataEn?.headline ||
+      newsOrId.title ||
+      headline ||
+      "";
+    if (!category) {
+      category = getNewsCategory(newsOrId);
+    }
+  } else {
+    title = headline || "";
+  }
+
+  const maxWords = options.maxWords ?? 8;
+  const slug = toSlug(title, maxWords);
+  const categorySlug = toSectionSlug(category) || "news";
+  return `/news/${categorySlug}/${slug}`;
 };
 
 export const buildSectionPath = (name) => {

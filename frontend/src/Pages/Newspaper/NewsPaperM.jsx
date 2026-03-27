@@ -8,11 +8,15 @@ import Sidebar from "./Components/Sidebar";
 import PagePreview from "./Components2/PagePreview";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { buildSectionPath, sectionNameFromPath } from "../../utils/paths";
+import { Helmet } from "react-helmet";
+import { useSiteData } from "../../context/SiteDataContext";
+import logo from "../../assets/logo1.png";
 
 export default function NewsPaperM() {
   const navigate = useNavigate();
   const location = useLocation();
   const { section } = useParams();
+  const { adminConfig } = useSiteData();
   const [isOn, setIsOn] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("tn_theme") === "dark";
@@ -72,8 +76,33 @@ export default function NewsPaperM() {
     }
   }, [activePage, location.pathname, navigate]);
 
+  const siteName = adminConfig?.siteName || "Tamilaka News";
+  const pageLabel =
+    activePage === "main" ? "Home" : activePage.replace(/-/g, " ");
+  const pageTitle =
+    activePage === "main" ? siteName : `${pageLabel} | ${siteName}`;
+  const pageDescription =
+    activePage === "main"
+      ? "Latest news and updates from Tamil Nadu."
+      : `Latest ${pageLabel} news and updates from Tamil Nadu.`;
+  const pageUrl =
+    typeof window !== "undefined" ? window.location.href : "";
+  const ogImage =
+    typeof window !== "undefined"
+      ? new URL(logo, window.location.origin).toString()
+      : logo;
+
   return (
     <div style={{ ...themeStyle, width: "100%", minHeight: "100vh", margin: 0, padding: 0 }}>
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={ogImage} />
+        {pageUrl && <meta property="og:url" content={pageUrl} />}
+        <meta property="og:type" content="website" />
+      </Helmet>
       <div className="main-screen" style={{ ...themeStyle, backgroundColor: "transparent", maxWidth: "1280px", margin: "0 auto", padding: "0 24px" }}>
         <Navbar
           setIsOn={setIsOn}

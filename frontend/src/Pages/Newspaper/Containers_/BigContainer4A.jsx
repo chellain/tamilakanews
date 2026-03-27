@@ -43,7 +43,7 @@ const newsToShow = (language === "en" ? translatedNews : allNews) || [];
 
   const handleNavigate = () => {
     if (!newsId || !news) return;
-    navigate(buildNewsPath(newsId, renderData.headline));
+    navigate(buildNewsPath(news || newsId, renderData.headline));
   };
   const width= size;
   return (

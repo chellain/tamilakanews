@@ -26,7 +26,7 @@ const PreviewNorContainer4B = ({ newsId, showSeparator = false }) => {
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(buildNewsPath(newsId, news?.data?.headline || renderData.content));
+    navigate(buildNewsPath(news || newsId, news?.data?.headline || renderData.content));
   };
 
   return (

@@ -179,6 +179,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
           id: news.id,
           headline: headline,
           oneLiner: oneLiner,
+          news,
         });
       }
     });
@@ -262,7 +263,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
     setShowSuggestions(false);
     setSearchQuery("");
     setSearchOpen(false);
-    navigate(buildNewsPath(newsItem.id, newsItem.headline));
+    navigate(buildNewsPath(newsItem.news || newsItem.id, newsItem.headline));
   };
 
   const hasSuggestions =

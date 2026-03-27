@@ -86,7 +86,7 @@ const PreviewNorContainer5 = ({
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(buildNewsPath(newsId, renderData.headline));
+    navigate(buildNewsPath(news || newsId, renderData.headline));
   };
 
   // FIX: Pink text on hover

@@ -169,6 +169,7 @@ export default function Sidebar({ open, onClose, activePage, setActivePage, isOn
           id: news.id,
           headline: headline,
           oneLiner: oneLiner,
+          news,
         });
       }
     });
@@ -200,7 +201,7 @@ export default function Sidebar({ open, onClose, activePage, setActivePage, isOn
     setShowSuggestions(false);
     setSearchQuery("");
     onClose();
-    navigate(buildNewsPath(newsItem.id, newsItem.headline));
+    navigate(buildNewsPath(newsItem.news || newsItem.id, newsItem.headline));
   };
 
   const hasSuggestions =

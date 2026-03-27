@@ -40,10 +40,12 @@ import { updateNewsPageConfig } from "../../Api/newsPageApi";
 import useProgressiveLoading from "../Shared/useProgressiveLoading";
 import BrandLoader from "../Shared/BrandLoader";
 import LazyImage, { ImageLoadProvider } from "../Shared/LazyImage";
-import { buildNewsPath } from "../../utils/paths";
+import { buildNewsPath, getNewsCategory, toSectionSlug, toSlug } from "../../utils/paths";
+import { Helmet } from "react-helmet";
+import JsonLd from "../../Shared/JsonLd";
 
 export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
-  const { id, slug } = useParams();
+  const { category: categoryParam, slug } = useParams();
   const navigate = useNavigate();
   const {
     allNews,
@@ -135,21 +137,80 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   }, []);
 
   const newsSource = language === "en" && translatedNews?.length ? translatedNews : allNews;
-  const fallbackId = allNews.length > 0 ? allNews[0].id : null;
-  const activeId = forcedNewsId ?? (id ? Number(id) : null) ?? fallbackId;
-  const currentNews =
-    newsSource.find((news) => news.id === Number(activeId)) ||
-    allNews.find((news) => news.id === Number(activeId));
+  const numericRouteId =
+    categoryParam && /^[0-9]+$/.test(categoryParam) ? Number(categoryParam) : null;
+  const activeCategorySlug =
+    numericRouteId != null ? "" : categoryParam ? toSectionSlug(categoryParam) : "";
+
+  const getHeadlineForSlug = (news) => {
+    if (!news) return "";
+    if (language === "en") {
+      return news.dataEn?.headline || news.data?.headline || news.title || "";
+    }
+    return news.data?.headline || news.title || "";
+  };
+
+  const matchesRoute = (news) => {
+    if (!news) return false;
+    if (activeCategorySlug) {
+      const newsCategorySlug = toSectionSlug(getNewsCategory(news));
+      if (newsCategorySlug && newsCategorySlug !== activeCategorySlug) return false;
+    }
+    if (slug) {
+      return toSlug(getHeadlineForSlug(news)) === slug;
+    }
+    return true;
+  };
+
+  const findByRoute = (list) => list.find((news) => matchesRoute(news));
+
+  let currentNews = null;
+  if (forcedNewsId != null) {
+    const forcedId = Number(forcedNewsId);
+    currentNews =
+      newsSource.find((news) => news.id === forcedId) ||
+      allNews.find((news) => news.id === forcedId);
+  } else if (numericRouteId != null) {
+    currentNews =
+      newsSource.find((news) => news.id === numericRouteId) ||
+      allNews.find((news) => news.id === numericRouteId);
+  } else {
+    currentNews = findByRoute(newsSource) || findByRoute(allNews);
+  }
+
+  if (!currentNews && activeCategorySlug) {
+    currentNews =
+      newsSource.find(
+        (news) => toSectionSlug(getNewsCategory(news)) === activeCategorySlug
+      ) ||
+      allNews.find(
+        (news) => toSectionSlug(getNewsCategory(news)) === activeCategorySlug
+      );
+  }
+
+  if (!currentNews && slug) {
+    const slugMatch = (news) => toSlug(getHeadlineForSlug(news)) === slug;
+    currentNews = newsSource.find(slugMatch) || allNews.find(slugMatch);
+  }
+
+  if (!currentNews && allNews.length > 0) {
+    currentNews = allNews[0];
+  }
   const MLayout = 1;
 
   useEffect(() => {
     if (!currentNews) return;
     const expectedPath = buildNewsPath(currentNews);
-    const expectedSlug = expectedPath.split("/").pop();
-    if (expectedSlug && expectedSlug !== slug) {
+    const parts = expectedPath.split("/").filter(Boolean);
+    const expectedCategory = parts[1] || "";
+    const expectedSlug = parts[2] || "";
+    if (
+      (expectedSlug && expectedSlug !== slug) ||
+      (expectedCategory && expectedCategory !== activeCategorySlug)
+    ) {
       navigate(expectedPath, { replace: true });
     }
-  }, [currentNews, slug, navigate]);
+  }, [currentNews, slug, activeCategorySlug, navigate]);
 
   const filterNewsByCategory = (category, list) => {
     if (!category) return list;
@@ -284,19 +345,19 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   };
 
   const fullContent = pickArray(
-    isEnglish ? currentNews.dataEn?.fullContent : null,
-    isEnglish ? currentNews.data?.fullContent : null,
-    isEnglish ? currentNews.fullContentEn : null,
-    currentNews.data?.fullContent,
-    currentNews.fullContent
+    isEnglish ? safeNews?.dataEn?.fullContent : null,
+    isEnglish ? safeNews?.data?.fullContent : null,
+    isEnglish ? safeNews?.fullContentEn : null,
+    safeNews?.data?.fullContent,
+    safeNews?.fullContent
   );
 
   const containerOverlays = pickArray(
-    isEnglish ? currentNews.dataEn?.containerOverlays : null,
-    isEnglish ? currentNews.data?.containerOverlays : null,
-    isEnglish ? currentNews.containerOverlaysEn : null,
-    currentNews.data?.containerOverlays,
-    currentNews.containerOverlays
+    isEnglish ? safeNews?.dataEn?.containerOverlays : null,
+    isEnglish ? safeNews?.data?.containerOverlays : null,
+    isEnglish ? safeNews?.containerOverlaysEn : null,
+    safeNews?.data?.containerOverlays,
+    safeNews?.containerOverlays
   );
   const totalContentItems = fullContent.length + containerOverlays.length;
 
@@ -312,14 +373,6 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     batchSize: 2,
     enable: true,
   });
-
-  if (loading) {
-    return <div style={{ padding: 40 }}>Loading news...</div>;
-  }
-
-  if (!currentNews) {
-    return <div style={{ padding: 40 }}>No news selected for preview.</div>;
-  }
 
   const visibleFullCount = Math.min(fullContent.length, visibleCount);
   const visibleContainerCount = Math.max(0, visibleCount - fullContent.length);
@@ -350,9 +403,10 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     };
   })();
 
+  const pagePath = currentNews ? buildNewsPath(currentNews) : "";
   const pageUrl =
-    typeof window !== "undefined" && currentNews?.id != null
-      ? `${window.location.origin}${buildNewsPath(currentNews)}`
+    typeof window !== "undefined" && pagePath
+      ? `${window.location.origin}/#${pagePath}`
       : "";
 
   const resolveAbsoluteUrl = (url) => {
@@ -382,28 +436,29 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   const shareDescription =
     displayData?.oneLiner || "Latest trending news from Tamil Nadu.";
 
-  useEffect(() => {
-    if (typeof document === "undefined" || !pageUrl) return;
+  const publishedRaw =
+    currentNews?.time || currentNews?.createdAt || currentNews?.updatedAt || null;
+  const publishedIso = publishedRaw ? new Date(publishedRaw).toISOString() : "";
+  const authorName =
+    currentNews?.author?.name ||
+    currentNews?.data?.author ||
+    currentNews?.dataEn?.author ||
+    "Tamilaka News";
 
-    const upsertMeta = (attr, key, content) => {
-      const selector = `meta[${attr}="${key}"]`;
-      let tag = document.head.querySelector(selector);
-      if (!tag) {
-        tag = document.createElement("meta");
-        tag.setAttribute(attr, key);
-        document.head.appendChild(tag);
-      }
-      tag.setAttribute("content", content);
-    };
-
-    document.title = `${shareTitle} | Tamilaka News`;
-    upsertMeta("property", "og:title", shareTitle);
-    upsertMeta("property", "og:description", shareDescription);
-    upsertMeta("property", "og:image", shareImage);
-    upsertMeta("property", "og:url", pageUrl);
-    upsertMeta("property", "og:type", "article");
-    upsertMeta("property", "og:site_name", "Tamilaka News");
-  }, [pageUrl, shareTitle, shareDescription, shareImage]);
+  const newsJsonLd =
+    currentNews && shareTitle
+      ? {
+          "@context": "https://schema.org",
+          "@type": "NewsArticle",
+          headline: shareTitle,
+          image: shareImage ? [shareImage] : undefined,
+          datePublished: publishedIso || undefined,
+          author: {
+            "@type": "Person",
+            name: authorName,
+          },
+        }
+      : null;
 
   const handleCopyLink = async () => {
     if (!pageUrl) return;
@@ -429,6 +484,14 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     const timer = window.setTimeout(() => setShowCopyToast(false), 2000);
     return () => window.clearTimeout(timer);
   }, [showCopyToast]);
+
+  if (loading) {
+    return <div style={{ padding: 40 }}>Loading news...</div>;
+  }
+
+  if (!currentNews) {
+    return <div style={{ padding: 40 }}>No news selected for preview.</div>;
+  }
 
   const shareLinks = [
     {
@@ -486,6 +549,17 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
   return (
     <>
+      <Helmet>
+        <title>{`${shareTitle} | Tamilaka News`}</title>
+        <meta name="description" content={shareDescription} />
+        <meta property="og:title" content={shareTitle} />
+        <meta property="og:description" content={shareDescription} />
+        <meta property="og:image" content={shareImage} />
+        {pageUrl && <meta property="og:url" content={pageUrl} />}
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="Tamilaka News" />
+        <JsonLd data={newsJsonLd} />
+      </Helmet>
       <BrandLoader show={showBrandLoader} fading={brandFading} />
       <ImageLoadProvider canLoad={canLoadImages}>
         <div className={`prepge-main${isOn ? " dark" : ""}`} style={{ ...themeStyle, minHeight: "100vh" }}>

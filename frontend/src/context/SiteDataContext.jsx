@@ -92,6 +92,10 @@ export const SiteDataProvider = ({ children }) => {
     }
 
     setLoading(false);
+
+    if (typeof window !== "undefined" && window.snapSaveState) {
+      window.snapSaveState();
+    }
   }, []);
 
   useEffect(() => {

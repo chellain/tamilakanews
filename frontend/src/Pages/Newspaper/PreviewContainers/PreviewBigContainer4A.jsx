@@ -44,7 +44,7 @@ const PreviewBigContainer4A = ({
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(buildNewsPath(newsId, renderData.headline));
+    navigate(buildNewsPath(news || newsId, renderData.headline));
   };
 
   return (

@@ -41,7 +41,7 @@ const BigNewsContainer4 = ({
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(buildNewsPath(newsId, renderData.headline));
+    navigate(buildNewsPath(news || newsId, renderData.headline));
   };
 
   return (

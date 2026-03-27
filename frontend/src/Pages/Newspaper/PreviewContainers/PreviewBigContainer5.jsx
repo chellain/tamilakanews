@@ -43,7 +43,7 @@ const PreviewBigContainer5 = ({
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(buildNewsPath(newsId, renderData.headline));
+    navigate(buildNewsPath(news || newsId, renderData.headline));
   };
 
   const renderMedia = () => {

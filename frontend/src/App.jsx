@@ -1,6 +1,6 @@
 ﻿
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import PreviewPage from "./Pages/PreviewPage/PreviewPage";
 import NewsPaperM from "./Pages/Newspaper/NewsPaperM";
@@ -32,14 +32,14 @@ function AppContent() {
   return (
     <>
       <BrandLoader show={showBrandLoader} fading={brandFading} />
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path="/" element={<NewsPaperM />} />
           <Route path="/section/:section" element={<NewsPaperM />} />
-          <Route path="/preview/:id/:slug?" element={<PreviewPage />} />
-          <Route path="/news/:id/:slug?" element={<PreviewPage />} />
+          <Route path="/preview/:category/:slug?" element={<PreviewPage />} />
+          <Route path="/news/:category/:slug?" element={<PreviewPage />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </>
   );
 }

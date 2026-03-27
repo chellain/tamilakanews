@@ -82,7 +82,7 @@ const PreviewUniversalNewsContainer = ({
 
   const handleNavigate = () => {
     if (!newsId) return;
-    navigate(buildNewsPath(newsId, renderData.headline));
+    navigate(buildNewsPath(news || newsId, renderData.headline));
   };
 
   const imageStyle = {
