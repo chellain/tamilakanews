@@ -187,17 +187,19 @@ const maincontstyle = {
 };
 
 const imgoverly = {
-  width: "150px",
-  minWidth: "150px",
-  height: "100%",
   display: "flex",
-  borderRadius:"5px",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: "5px",
+  overflow: "hidden",
+  flexShrink: 0,
+  backgroundColor: "rgba(255,255,255,0.04)",
 };
 
 const imgstyle = {
   width: "100%",
   height: "100%",
-  objectFit: "cover",
+  objectFit: "contain",
 };
 
 export default PreviewNorContainer5;

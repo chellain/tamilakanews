@@ -96,7 +96,7 @@ const PreviewUniversalNewsContainer = ({
   };
 
   const headlineStyle = {
-    fontSize:     "20px",
+    fontSize:     "17px",
     fontWeight:   "bold",
   };
 

@@ -1,5 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { getAllNews } from "../Api/newsApi";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { getNewsById, getNewsSummaryById } from "../Api/newsApi";
 import { getLayout } from "../Api/layoutApi";
 import { getAdminConfig } from "../Api/adminApi";
 import { getNewsPageConfig } from "../Api/newsPageApi";
@@ -53,56 +53,204 @@ export const SiteDataProvider = ({ children }) => {
   const [newsPageConfig, setNewsPageConfig] = useState(null);
   const [language, setLanguage] = useState("ta");
   const [loading, setLoading] = useState(true);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsDetailLoadingIds, setNewsDetailLoadingIds] = useState([]);
   const [error, setError] = useState("");
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(() => {
+    let cancelled = false;
+
     setLoading(true);
     setError("");
 
-    const [newsRes, layoutRes, adminRes, newsPageRes] = await Promise.allSettled([
-      getAllNews(),
+    const loadCore = async () => {
+      const [layoutRes, adminRes, newsPageRes] = await Promise.allSettled([
       getLayout(),
       getAdminConfig(),
       getNewsPageConfig(),
-    ]);
+      ]);
 
-    if (newsRes.status === "fulfilled" && Array.isArray(newsRes.value)) {
-      setAllNews(newsRes.value);
-    }
+      if (cancelled) return;
 
-    if (layoutRes.status === "fulfilled") {
-      setLayout(layoutRes.value || null);
-    }
+      if (layoutRes.status === "fulfilled") {
+        setLayout(layoutRes.value || null);
+      }
 
-    if (adminRes.status === "fulfilled") {
-      setAdminConfig(adminRes.value || null);
-    }
+      if (adminRes.status === "fulfilled") {
+        setAdminConfig(adminRes.value || null);
+      }
 
-    if (newsPageRes.status === "fulfilled") {
-      setNewsPageConfig(newsPageRes.value || null);
-    }
+      if (newsPageRes.status === "fulfilled") {
+        setNewsPageConfig(newsPageRes.value || null);
+      }
 
-    if (
-      newsRes.status === "rejected" ||
-      layoutRes.status === "rejected" ||
-      adminRes.status === "rejected" ||
-      newsPageRes.status === "rejected"
-    ) {
-      setError("Failed to load site data.");
-    }
+      if (
+        layoutRes.status === "rejected" ||
+        adminRes.status === "rejected" ||
+        newsPageRes.status === "rejected"
+      ) {
+        setError("Failed to load site data.");
+      }
 
-    setLoading(false);
+      setLoading(false);
 
-    if (typeof window !== "undefined" && window.snapSaveState) {
-      window.snapSaveState();
-    }
+      if (typeof window !== "undefined" && window.snapSaveState) {
+        window.snapSaveState();
+      }
+    };
+
+    loadCore();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    refresh();
+    const cleanup = refresh();
+    return () => {
+      if (typeof cleanup === "function") cleanup();
+    };
   }, [refresh]);
 
   const translatedNews = useMemo(() => buildTranslatedNews(allNews), [allNews]);
+
+  const newsIdSetRef = useRef(new Set());
+  const newsQueueRef = useRef([]);
+  const newsQueueRunningRef = useRef(false);
+
+  useEffect(() => {
+    const nextSet = new Set();
+    allNews.forEach((item) => {
+      if (item?.id != null) nextSet.add(String(item.id));
+      if (item?._id != null) nextSet.add(String(item._id));
+    });
+    newsIdSetRef.current = nextSet;
+  }, [allNews]);
+
+  const sanitizeSummary = useCallback((news) => {
+    if (!news || typeof news !== "object") return news;
+    const cleaned = { ...news };
+    delete cleaned.fullContent;
+    delete cleaned.fullContentEn;
+    delete cleaned.containerOverlays;
+    delete cleaned.containerOverlaysEn;
+    return cleaned;
+  }, []);
+
+  const mergeNewsItem = useCallback((newsItem) => {
+    if (!newsItem) return;
+    const idKey =
+      newsItem?.id != null
+        ? String(newsItem.id)
+        : newsItem?._id != null
+        ? String(newsItem._id)
+        : null;
+    if (!idKey) return;
+
+    setAllNews((prev) => {
+      const idx = prev.findIndex(
+        (item) =>
+          String(item?.id ?? item?._id ?? "") === idKey
+      );
+      if (idx === -1) {
+        return [...prev, newsItem];
+      }
+      const next = [...prev];
+      next[idx] = { ...prev[idx], ...newsItem };
+      return next;
+    });
+
+    newsIdSetRef.current.add(idKey);
+  }, []);
+
+  const loadNewsSummaryById = useCallback(
+    async (id) => {
+      if (id == null) return null;
+      const response = await getNewsSummaryById(id);
+      const sanitized = sanitizeSummary(response);
+      mergeNewsItem(sanitized);
+      return sanitized;
+    },
+    [mergeNewsItem, sanitizeSummary]
+  );
+
+  const enqueueNewsSummaries = useCallback(
+    (ids = []) => {
+      const queue = newsQueueRef.current;
+      const known = newsIdSetRef.current;
+      ids.forEach((id) => {
+        if (id == null) return;
+        const key = String(id);
+        if (known.has(key)) return;
+        if (queue.includes(key)) return;
+        queue.push(key);
+      });
+
+      if (!newsQueueRunningRef.current && queue.length > 0) {
+        const runQueue = async () => {
+          newsQueueRunningRef.current = true;
+          setNewsLoading(true);
+          try {
+            while (newsQueueRef.current.length > 0) {
+              const nextId = newsQueueRef.current.shift();
+              if (!nextId) continue;
+              if (newsIdSetRef.current.has(String(nextId))) continue;
+              try {
+                await loadNewsSummaryById(nextId);
+              } catch (error) {
+                setError((prev) => prev || "Failed to load news.");
+              }
+            }
+          } finally {
+            newsQueueRunningRef.current = false;
+            setNewsLoading(false);
+          }
+        };
+        runQueue();
+      }
+    },
+    [loadNewsSummaryById]
+  );
+
+  const ensureNewsDetail = useCallback(
+    async (id) => {
+      if (id == null) return null;
+      const key = String(id);
+      const existing = allNews.find(
+        (item) => String(item?.id ?? item?._id ?? "") === key
+      );
+      const alreadyLoaded =
+        Array.isArray(existing?.fullContent) ||
+        Array.isArray(existing?.containerOverlays);
+      if (alreadyLoaded) return existing;
+
+      setNewsDetailLoadingIds((prev) =>
+        prev.includes(key) ? prev : [...prev, key]
+      );
+      try {
+        const detail = await getNewsById(id);
+        if (detail) {
+          mergeNewsItem(detail);
+        }
+        return detail;
+      } catch (error) {
+        setError((prev) => prev || "Failed to load news details.");
+        return null;
+      } finally {
+        setNewsDetailLoadingIds((prev) => prev.filter((item) => item !== key));
+      }
+    },
+    [allNews, mergeNewsItem]
+  );
+
+  const isNewsDetailLoading = useCallback(
+    (id) => {
+      if (id == null) return false;
+      return newsDetailLoadingIds.includes(String(id));
+    },
+    [newsDetailLoadingIds]
+  );
 
   const updateNewsLocal = useCallback((newsId, updater) => {
     setAllNews((prev) =>
@@ -133,6 +281,10 @@ export const SiteDataProvider = ({ children }) => {
     updateNewsLocal,
     updateLayoutLocal,
     loading,
+    newsLoading,
+    enqueueNewsSummaries,
+    ensureNewsDetail,
+    isNewsDetailLoading,
     error,
     refresh,
   };
