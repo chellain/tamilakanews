@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-
-import luffy from "../../assets/jwt.png";
+// import luffy from "../../assets/jwt.png";
 import newsimg from "../../assets/jwt.png";
 import { IoSearchSharp, IoSettingsOutline, IoInformationCircleOutline } from "react-icons/io5";
 import { IoMdNotificationsOutline } from "react-icons/io";
