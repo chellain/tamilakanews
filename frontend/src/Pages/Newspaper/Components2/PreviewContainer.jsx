@@ -58,7 +58,7 @@ export default function PreviewContainer({
   // without any extra prop forwarding.
   const isMobile = useMobile();
 
-  const { layout, language } = useSiteData();
+  const { layout, language, allNews } = useSiteData();
   const containerData = findContainer({
     layout,
     catName,
@@ -190,6 +190,23 @@ export default function PreviewContainer({
             
             allElements.sort((a, b) => a.timestamp - b.timestamp);
             
+            const hasNews = (newsId) => {
+              if (newsId == null) return false;
+              const key = String(newsId);
+              return allNews.some(
+                (item) => String(item?.id ?? item?._id ?? "") === key
+              );
+            };
+
+            const renderSlotSkeleton = (key) => (
+              <div key={`${key}-skeleton`} className="skeleton-card skeleton">
+                <div className="skeleton skeleton-line" style={{ width: "60%" }} />
+                <div className="skeleton skeleton-line" style={{ width: "85%" }} />
+                <div className="skeleton skeleton-line" style={{ width: "70%" }} />
+                <div className="skeleton skeleton-block" />
+              </div>
+            );
+
             return allElements.map((element, index) => {
               if (element.type === 'item') {
                 const item = element.data;
@@ -237,6 +254,13 @@ export default function PreviewContainer({
 
                 // Special handling for Universal containers
                 if (item.containerType === "Universal Container") {
+                  if (item.newsId && !hasNews(item.newsId)) {
+                    return (
+                      <div key={item.slotId} style={slotWrapperStyle}>
+                        {renderSlotSkeleton(item.slotId)}
+                      </div>
+                    );
+                  }
                   return (
                     <div key={item.slotId} style={slotWrapperStyle}>
                       <PreviewUniversalNewsContainer
@@ -251,6 +275,13 @@ export default function PreviewContainer({
                 }
                 
                 // Regular news containers
+                if (item.newsId && !hasNews(item.newsId)) {
+                  return (
+                    <div key={item.slotId} style={slotWrapperStyle}>
+                      {renderSlotSkeleton(item.slotId)}
+                    </div>
+                  );
+                }
                 return (
                   <div key={item.slotId} style={slotWrapperStyle}>
                     <Component 

@@ -21,20 +21,47 @@ export default function LazyImage({
   style,
   canLoad,
   lazy = true,
+  eager = true,
+  defer = true,
   onClick,
   onError,
 }) {
   const imgRef = useRef(null);
   const [inView, setInView] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [deferReady, setDeferReady] = useState(!defer);
 
   const contextCanLoad = useImageLoad();
   const allowLoad = canLoad ?? contextCanLoad;
 
   useEffect(() => {
+    if (!defer) {
+      setDeferReady(true);
+      return;
+    }
+    let raf = null;
+    if (typeof window !== "undefined" && window.requestAnimationFrame) {
+      raf = window.requestAnimationFrame(() => setDeferReady(true));
+    } else {
+      const timer = setTimeout(() => setDeferReady(true), 0);
+      return () => clearTimeout(timer);
+    }
+    return () => {
+      if (raf && typeof window !== "undefined" && window.cancelAnimationFrame) {
+        window.cancelAnimationFrame(raf);
+      }
+    };
+  }, [defer]);
+
+  useEffect(() => {
     if (!allowLoad) return;
     const node = imgRef.current;
     if (!node) return;
+
+    if (eager) {
+      setInView(true);
+      return;
+    }
 
     if (!("IntersectionObserver" in window)) {
       setInView(true);
@@ -55,7 +82,7 @@ export default function LazyImage({
     return () => observer.disconnect();
   }, [allowLoad]);
 
-  const shouldLoad = allowLoad && inView;
+  const shouldLoad = allowLoad && inView && deferReady;
   const resolvedSrc = shouldLoad ? src : PLACEHOLDER_SRC;
 
   const handleLoad = (event) => {
@@ -70,7 +97,7 @@ export default function LazyImage({
       alt={alt}
       className={`${className || ""} ${!loaded ? "lazy-img-skeleton" : ""}`.trim()}
       style={style}
-      loading={lazy ? "lazy" : undefined}
+      loading={eager ? "eager" : lazy ? "lazy" : undefined}
       decoding="async"
       onLoad={handleLoad}
       onClick={onClick}

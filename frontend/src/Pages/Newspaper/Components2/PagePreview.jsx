@@ -58,7 +58,7 @@ function useIsMobile() {
 
 export default function PagePreview({ pageName = "main" }) {
   const isMobile = useIsMobile();
-  const { layout, loading } = useSiteData();
+  const { layout, loading, enqueueNewsSummaries } = useSiteData();
   const currentPage = useMemo(
     () => findPageByName(layout, pageName),
     [layout, pageName]
@@ -105,6 +105,80 @@ export default function PagePreview({ pageName = "main" }) {
   const renderCount = Math.min(visibleCount, containers.length);
   const visibleContainers = containers.slice(0, renderCount);
   const remainingCount = Math.max(0, containers.length - renderCount);
+
+  const extractTimestamp = (item) => {
+    if (item?.slotId) {
+      const match = item.slotId.match(/slot_(\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    }
+    if (item?.id) {
+      const match = item.id.toString().match(/_(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    }
+    return 0;
+  };
+
+  const collectSliderIds = (slider) => {
+    if (!slider?.items || slider.items.length === 0) return [];
+    const sorted = [...slider.items].sort(
+      (a, b) => extractTimestamp(a) - extractTimestamp(b)
+    );
+    return sorted.map((item) => item.newsId).filter(Boolean);
+  };
+
+  const collectContainerIds = (container) => {
+    if (!container) return [];
+    const items = container.items || [];
+    const nestedContainers = container.nestedContainers || [];
+    const nestedSliders = container.sliders || [];
+
+    const elements = [
+      ...items.map((item) => ({ type: "item", data: item, ts: extractTimestamp(item) })),
+      ...nestedContainers.map((nested) => ({
+        type: "nested",
+        data: nested,
+        ts: extractTimestamp(nested),
+      })),
+      ...nestedSliders.map((slider) => ({
+        type: "slider",
+        data: slider,
+        ts: extractTimestamp(slider),
+      })),
+    ].sort((a, b) => a.ts - b.ts);
+
+    const ids = [];
+    elements.forEach((element) => {
+      if (element.type === "item") {
+        if (element.data?.newsId) ids.push(element.data.newsId);
+        return;
+      }
+      if (element.type === "nested") {
+        ids.push(...collectContainerIds(element.data));
+        return;
+      }
+      if (element.type === "slider") {
+        ids.push(...collectSliderIds(element.data));
+      }
+    });
+    return ids;
+  };
+
+  const orderedNewsIds = useMemo(() => {
+    if (!currentPage) return [];
+    const ids = [];
+    containers.forEach((container) => {
+      ids.push(...collectContainerIds(container));
+    });
+    sliders.forEach((slider) => {
+      ids.push(...collectSliderIds(slider));
+    });
+    return ids.filter(Boolean);
+  }, [containers, sliders, currentPage]);
+
+  useEffect(() => {
+    if (!orderedNewsIds.length) return;
+    enqueueNewsSummaries(orderedNewsIds);
+  }, [enqueueNewsSummaries, orderedNewsIds]);
 
   return (
     <>

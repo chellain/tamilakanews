@@ -55,6 +55,8 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     adminConfig,
     setNewsPageConfig,
     newsLoading,
+    ensureNewsDetail,
+    isNewsDetailLoading,
   } = useSiteData();
   const allPages = adminConfig?.allPages || [];
   
@@ -212,6 +214,14 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     }
   }, [currentNews, slug, activeCategorySlug, navigate]);
 
+  // Always reset scroll when a new news item is opened (especially on mobile).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    if (document?.documentElement) document.documentElement.scrollTop = 0;
+    if (document?.body) document.body.scrollTop = 0;
+  }, [currentNews?.id, slug, activeCategorySlug]);
+
   const filterNewsByCategory = (category, list) => {
     if (!category) return list;
     return list.filter((news) => {
@@ -258,6 +268,34 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
   const sideIds = resolveDisplayIds(sideConfig, sideConfig?.count || 5);
   const sliderIds = resolveDisplayIds(sliderConfig, sliderConfig?.count || 6);
+  const sideDisplayIds = useMemo(() => {
+    const excludeId = currentNews?.id ?? null;
+    if (sideConfig?.deliveryType === "shuffle") {
+      const count = Number(sideConfig?.count || 5);
+      return pickRandomIds(sideConfig?.category, count, excludeId);
+    }
+    const baseIds =
+      excludeId == null ? sideIds : sideIds.filter((id) => id !== excludeId);
+    const desiredCount = Number(
+      sideConfig?.count || (Array.isArray(sideIds) ? sideIds.length : 0)
+    );
+    if (!desiredCount || baseIds.length >= desiredCount) {
+      return desiredCount ? baseIds.slice(0, desiredCount) : baseIds;
+    }
+    const pool = filterNewsByCategory(sideConfig?.category, allNews);
+    const poolIds = pool.map((n) => n.id);
+    const extras = poolIds.filter(
+      (id) => id !== excludeId && !baseIds.includes(id)
+    );
+    return baseIds.concat(extras.slice(0, desiredCount - baseIds.length));
+  }, [
+    sideConfig?.deliveryType,
+    sideConfig?.count,
+    sideConfig?.category,
+    sideIds,
+    currentNews?.id,
+    allNews,
+  ]);
 
   const openSettings = (sectionKey) => {
     const section = sectionKey === "slider" ? sliderConfig : sideConfig;
@@ -278,9 +316,11 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     setEditSection(null);
   };
 
-  const pickRandomIds = (category, count) => {
+  const pickRandomIds = (category, count, excludeId = null) => {
     const pool = filterNewsByCategory(category, allNews);
-    const ids = pool.map((n) => n.id);
+    const ids = pool
+      .map((n) => n.id)
+      .filter((id) => (excludeId == null ? true : id !== excludeId));
 
     const shuffled = [...ids];
     for (let i = shuffled.length - 1; i > 0; i -= 1) {
@@ -360,6 +400,12 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     safeNews?.containerOverlays
   );
   const totalContentItems = fullContent.length + containerOverlays.length;
+  const detailPending =
+    !!currentNews &&
+    fullContent.length === 0 &&
+    containerOverlays.length === 0;
+  const detailLoading =
+    detailPending && isNewsDetailLoading?.(currentNews?.id);
 
   const {
     showBrandLoader,
@@ -368,7 +414,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     showSkeletons,
     canLoadImages,
   } = useProgressiveLoading({
-    totalItems: totalContentItems,
+    totalItems: detailPending ? 4 : totalContentItems,
     initialBatch: 2,
     batchSize: 2,
     enable: true,
@@ -485,7 +531,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     return () => window.clearTimeout(timer);
   }, [showCopyToast]);
 
-  if (newsLoading) {
+  if (newsLoading && !currentNews) {
     return <div style={{ padding: 40 }}>Loading news...</div>;
   }
 
@@ -528,6 +574,20 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   const decreaseFontSize = () => {
     setFontSize(prev => Math.max(prev - 10, 70)); // Min 70%
   };
+
+  useEffect(() => {
+    if (!currentNews?.id) return;
+    if (!detailPending) return;
+    if (isNewsDetailLoading?.(currentNews.id)) return;
+    ensureNewsDetail(currentNews.id);
+  }, [currentNews?.id, detailPending, ensureNewsDetail, isNewsDetailLoading]);
+
+  useEffect(() => {
+    if (currentNews) return;
+    if (numericRouteId == null) return;
+    if (isNewsDetailLoading?.(numericRouteId)) return;
+    ensureNewsDetail(numericRouteId);
+  }, [currentNews, numericRouteId, ensureNewsDetail, isNewsDetailLoading]);
 
   const handleNavigatePage = (pageName) => {
     const nextPage = String(pageName || "main").toLowerCase();
@@ -679,13 +739,19 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
             </div>
 
             {/* Render outside container boxes first */}
-            {showSkeletons && (
+            {detailLoading && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {renderSkeletonStack(4)}
+              </div>
+            )}
+
+            {!detailLoading && showSkeletons && (
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 {renderSkeletonStack(Math.max(1, Math.min(2, totalContentItems)))}
               </div>
             )}
 
-            {!showSkeletons && visibleFullCount > 0 && (
+            {!detailLoading && !showSkeletons && visibleFullCount > 0 && (
               <div
                 style={{
                   display: "flex",
@@ -708,7 +774,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
               </div>
             )}
 
-            {!showSkeletons && remainingFullCount > 0 && (
+            {!detailLoading && !showSkeletons && remainingFullCount > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 {renderSkeletonStack(remainingFullCount)}
               </div>
@@ -724,9 +790,11 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
                 fontSize: `${fontSize}%`,
               }}
             >
-              {showSkeletons && renderSkeletonStack(Math.max(1, Math.min(2, totalContentItems)))}
+              {!detailLoading &&
+                showSkeletons &&
+                renderSkeletonStack(Math.max(1, Math.min(2, totalContentItems)))}
 
-              {!showSkeletons && visibleContainerCount > 0 && (
+              {!detailLoading && !showSkeletons && visibleContainerCount > 0 && (
                 <>
                   {containerOverlays.slice(0, visibleContainerCount).map((container) => (
                     <ContainerView 
@@ -739,9 +807,15 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
                 </>
               )}
 
-              {!showSkeletons && remainingContainerCount > 0 && renderSkeletonStack(remainingContainerCount)}
+              {!detailLoading &&
+                !showSkeletons &&
+                remainingContainerCount > 0 &&
+                renderSkeletonStack(remainingContainerCount)}
 
-              {!showSkeletons && containerOverlays.length === 0 && fullContent.length === 0 && (
+              {!detailLoading &&
+                !showSkeletons &&
+                containerOverlays.length === 0 &&
+                fullContent.length === 0 && (
                 <div style={{ padding: "20px", color: "#999", textAlign: "center" }}>
                   No content available
                 </div>
@@ -758,12 +832,12 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
           {MLayout === 1 && !isMobile && <Line direction="V" length="1250px" thickness="1px" color="#e80d8c" />}
           {MLayout === 1 && (
-            <Melumnews
-              headerName={sideHeaderText}
-              newsIds={sideIds}
-              editMode={editMode}
-              onOpenSettings={() => openSettings("side")}
-            />
+              <Melumnews
+                headerName={sideHeaderText}
+                newsIds={sideDisplayIds}
+                editMode={editMode}
+                onOpenSettings={() => openSettings("side")}
+              />
           )}
         </div>
       </div>

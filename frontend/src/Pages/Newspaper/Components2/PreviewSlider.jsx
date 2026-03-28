@@ -51,7 +51,7 @@ export default function PreviewSlider({
   const [translateX, setTranslateX] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [fadeKey, setFadeKey] = useState(0);
-  const { layout } = useSiteData();
+  const { layout, allNews } = useSiteData();
   const slider = findSlider({
     layout,
     catName,
@@ -125,6 +125,22 @@ export default function PreviewSlider({
     return translateX > -(scrollWidth - visibleWidth);
   })();
   const showNavigation = droppedContainers.length > 1;
+  const hasNews = (newsId) => {
+    if (newsId == null) return false;
+    const key = String(newsId);
+    return allNews.some(
+      (item) => String(item?.id ?? item?._id ?? "") === key
+    );
+  };
+
+  const renderSkeleton = (key) => (
+    <div key={`${key}-skeleton`} className="skeleton-card skeleton">
+      <div className="skeleton skeleton-line" style={{ width: "60%" }} />
+      <div className="skeleton skeleton-line" style={{ width: "85%" }} />
+      <div className="skeleton skeleton-line" style={{ width: "70%" }} />
+      <div className="skeleton skeleton-block" />
+    </div>
+  );
 
   // Render carousel slider (type1)
   if (sliderType === "type1") {
@@ -188,6 +204,10 @@ export default function PreviewSlider({
                     
                     const Component = COMPONENT_MAP[item.containerType];
                     if (!Component) return null;
+
+                    if (item.newsId && !hasNews(item.newsId)) {
+                      return renderSkeleton(item.slotId);
+                    }
 
                     if (item.containerType === "Universal Container") {
                       return (
@@ -370,6 +390,14 @@ export default function PreviewSlider({
               {droppedContainers.map((container) => {
                 const Component = COMPONENT_MAP[container.containerType];
                 if (!Component) return null;
+
+                if (container.newsId && !hasNews(container.newsId)) {
+                  return (
+                    <div key={`${container.slotId}-skeleton`} style={{ flexShrink: 0 }}>
+                      {renderSkeleton(container.slotId)}
+                    </div>
+                  );
+                }
 
                 return (
                   <div
