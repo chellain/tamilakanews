@@ -53,53 +53,99 @@ export const SiteDataProvider = ({ children }) => {
   const [newsPageConfig, setNewsPageConfig] = useState(null);
   const [language, setLanguage] = useState("ta");
   const [loading, setLoading] = useState(true);
+  const [newsLoading, setNewsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback((options = {}) => {
+    const { deferNews = true } = options;
+    let cancelled = false;
+    let idleId = null;
+    let timerId = null;
+
     setLoading(true);
     setError("");
 
-    const [newsRes, layoutRes, adminRes, newsPageRes] = await Promise.allSettled([
-      getAllNews(),
+    const loadCore = async () => {
+      const [layoutRes, adminRes, newsPageRes] = await Promise.allSettled([
       getLayout(),
       getAdminConfig(),
       getNewsPageConfig(),
-    ]);
+      ]);
 
-    if (newsRes.status === "fulfilled" && Array.isArray(newsRes.value)) {
-      setAllNews(newsRes.value);
-    }
+      if (cancelled) return;
 
-    if (layoutRes.status === "fulfilled") {
-      setLayout(layoutRes.value || null);
-    }
+      if (layoutRes.status === "fulfilled") {
+        setLayout(layoutRes.value || null);
+      }
 
-    if (adminRes.status === "fulfilled") {
-      setAdminConfig(adminRes.value || null);
-    }
+      if (adminRes.status === "fulfilled") {
+        setAdminConfig(adminRes.value || null);
+      }
 
-    if (newsPageRes.status === "fulfilled") {
-      setNewsPageConfig(newsPageRes.value || null);
-    }
+      if (newsPageRes.status === "fulfilled") {
+        setNewsPageConfig(newsPageRes.value || null);
+      }
 
-    if (
-      newsRes.status === "rejected" ||
-      layoutRes.status === "rejected" ||
-      adminRes.status === "rejected" ||
-      newsPageRes.status === "rejected"
-    ) {
-      setError("Failed to load site data.");
-    }
+      if (
+        layoutRes.status === "rejected" ||
+        adminRes.status === "rejected" ||
+        newsPageRes.status === "rejected"
+      ) {
+        setError("Failed to load site data.");
+      }
 
-    setLoading(false);
+      setLoading(false);
 
-    if (typeof window !== "undefined" && window.snapSaveState) {
-      window.snapSaveState();
-    }
+      if (typeof window !== "undefined" && window.snapSaveState) {
+        window.snapSaveState();
+      }
+    };
+
+    const loadNews = async () => {
+      setNewsLoading(true);
+      const newsRes = await Promise.allSettled([getAllNews()]);
+      if (cancelled) return;
+      const result = newsRes[0];
+
+      if (result.status === "fulfilled" && Array.isArray(result.value)) {
+        setAllNews(result.value);
+      } else if (result.status === "rejected") {
+        setError((prev) => prev || "Failed to load site data.");
+      }
+
+      setNewsLoading(false);
+    };
+
+    loadCore().then(() => {
+      if (cancelled) return;
+      if (!deferNews) {
+        loadNews();
+        return;
+      }
+
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        idleId = window.requestIdleCallback(() => loadNews(), { timeout: 2000 });
+      } else {
+        timerId = window.setTimeout(() => loadNews(), 500);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      if (idleId && typeof window !== "undefined" && window.cancelIdleCallback) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timerId) {
+        window.clearTimeout(timerId);
+      }
+    };
   }, []);
 
   useEffect(() => {
-    refresh();
+    const cleanup = refresh({ deferNews: true });
+    return () => {
+      if (typeof cleanup === "function") cleanup();
+    };
   }, [refresh]);
 
   const translatedNews = useMemo(() => buildTranslatedNews(allNews), [allNews]);
@@ -133,6 +179,7 @@ export const SiteDataProvider = ({ children }) => {
     updateNewsLocal,
     updateLayoutLocal,
     loading,
+    newsLoading,
     error,
     refresh,
   };

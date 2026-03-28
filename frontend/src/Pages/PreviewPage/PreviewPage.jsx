@@ -54,7 +54,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     newsPageConfig,
     adminConfig,
     setNewsPageConfig,
-    loading,
+    newsLoading,
   } = useSiteData();
   const allPages = adminConfig?.allPages || [];
   
@@ -485,7 +485,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     return () => window.clearTimeout(timer);
   }, [showCopyToast]);
 
-  if (loading) {
+  if (newsLoading) {
     return <div style={{ padding: 40 }}>Loading news...</div>;
   }
 
