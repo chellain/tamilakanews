@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useSiteData } from "../../../context/SiteDataContext";
-import jwt from "../../../assets/jwt.jpg";
+import jwt from "../../../assets/jwt.png";
 import timeFun  from "./timeFun";
 import LazyImage from "../../Shared/LazyImage";
 import { buildNewsPath } from "../../../utils/paths";

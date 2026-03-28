@@ -1,7 +1,7 @@
 import { useState } from "react";
 import timeFun from "../Containers_/timeFun";
 import { useNavigate } from "react-router-dom";
-import jwt from "../../../assets/jwt.jpg";
+import jwt from "../../../assets/jwt.png";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 import LazyImage from "../../Shared/LazyImage";

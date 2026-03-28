@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 
-import luffy from "../../assets/luffy.webp";
-import newsimg from "../../assets/newsimg.avif";
+import luffy from "../../assets/luffy.png";
+import newsimg from "../../assets/luffy.png";
 import { IoSearchSharp, IoSettingsOutline, IoInformationCircleOutline } from "react-icons/io5";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { BiWorld } from "react-icons/bi";

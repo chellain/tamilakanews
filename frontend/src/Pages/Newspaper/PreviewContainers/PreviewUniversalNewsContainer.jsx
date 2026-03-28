@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import timeFun from "../Containers_/timeFun";
-import jwt from "../../../assets/jwt.jpg";
+import jwt from "../../../assets/jwt.png";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 import { useMobile } from "../Components2/PagePreview";
