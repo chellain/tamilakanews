@@ -17,6 +17,17 @@ export const getNewsById = async (id) => {
   return response.data;
 };
 
+export const getNewsBySlug = async (categorySlug, slug, options = {}) => {
+  const response = await api.get("/news", {
+    params: {
+      category: categorySlug || undefined,
+      slug,
+    },
+    timeout: options.timeout ?? 8000,
+  });
+  return response.data;
+};
+
 export const createNews = async (payload) => {
   const response = await api.post("/news", payload);
   return response.data;

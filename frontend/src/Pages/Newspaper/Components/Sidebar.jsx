@@ -201,7 +201,8 @@ export default function Sidebar({ open, onClose, activePage, setActivePage, isOn
     setShowSuggestions(false);
     setSearchQuery("");
     onClose();
-    navigate(buildNewsPath(newsItem.news || newsItem.id, newsItem.headline));
+    if (!newsItem?.news) return;
+    navigate(buildNewsPath(newsItem.news, newsItem.headline));
   };
 
   const hasSuggestions =

@@ -263,7 +263,8 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
     setShowSuggestions(false);
     setSearchQuery("");
     setSearchOpen(false);
-    navigate(buildNewsPath(newsItem.news || newsItem.id, newsItem.headline));
+    if (!newsItem?.news) return;
+    navigate(buildNewsPath(newsItem.news, newsItem.headline));
   };
 
   const hasSuggestions =

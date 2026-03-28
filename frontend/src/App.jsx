@@ -29,6 +29,16 @@ function AppContent() {
     }
   }, [loading]);
 
+  // Safety: never block the UI indefinitely if APIs hang.
+  useEffect(() => {
+    if (!loading || !showBrandLoader) return;
+    const timer = setTimeout(() => {
+      setBrandFading(true);
+      setShowBrandLoader(false);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [loading, showBrandLoader]);
+
   return (
     <>
       <BrandLoader show={showBrandLoader} fading={brandFading} />

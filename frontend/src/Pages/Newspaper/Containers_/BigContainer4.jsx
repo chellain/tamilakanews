@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useSiteData } from "../../../context/SiteDataContext";
-import jwt from "../../../assets/jwt.jpg";
+import jwt from "../../../assets/jwt.png";
 import timeFun  from "./timeFun";
 import LazyImage from "../../Shared/LazyImage";
 import { buildNewsPath } from "../../../utils/paths";
@@ -40,8 +40,8 @@ const BigNewsContainer4 = ({
     : DEFAULT_DATA;
 
   const handleNavigate = () => {
-    if (!newsId) return;
-    navigate(buildNewsPath(news || newsId, renderData.headline));
+    if (!news) return;
+    navigate(buildNewsPath(news, renderData.headline));
   };
 
   return (
@@ -112,4 +112,6 @@ const BigNewsContainer4 = ({
 };
 
 export default BigNewsContainer4;
+
+
 

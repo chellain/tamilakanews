@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useSiteData } from "../../../context/SiteDataContext";
-import jwt from "../../../assets/jwt.jpg";
+import jwt from "../../../assets/jwt.png";
 import timeFun  from "./timeFun";
 import LazyImage from "../../Shared/LazyImage";
 import { buildNewsPath } from "../../../utils/paths";
@@ -43,7 +43,7 @@ const newsToShow = (language === "en" ? translatedNews : allNews) || [];
 
   const handleNavigate = () => {
     if (!newsId || !news) return;
-    navigate(buildNewsPath(news || newsId, renderData.headline));
+    navigate(buildNewsPath(news, renderData.headline));
   };
   const width= size;
   return (
@@ -114,4 +114,6 @@ const newsToShow = (language === "en" ? translatedNews : allNews) || [];
 };
 
 export default BigNewsContainer4A;
+
+
 

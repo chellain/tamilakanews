@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import timeFun from "../Containers_/timeFun";
 import { useSiteData } from "../../../context/SiteDataContext";
-import jwt from "../../../assets/jwt.jpg";
+import jwt from "../../../assets/jwt.png";
 import LazyImage from "../../Shared/LazyImage";
 import { buildNewsPath } from "../../../utils/paths";
 
@@ -42,8 +42,8 @@ const PreviewBigContainer5 = ({
     : DEFAULT_DATA;
 
   const handleNavigate = () => {
-    if (!newsId) return;
-    navigate(buildNewsPath(news || newsId, renderData.headline));
+    if (!news) return;
+    navigate(buildNewsPath(news, renderData.headline));
   };
 
   const renderMedia = () => {
@@ -98,5 +98,7 @@ const PreviewBigContainer5 = ({
 };
 
 export default PreviewBigContainer5;
+
+
 
 

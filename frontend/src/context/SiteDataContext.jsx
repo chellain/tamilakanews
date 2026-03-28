@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { getNewsById, getNewsSummaryById } from "../Api/newsApi";
+import { getNewsById, getNewsBySlug, getNewsSummaryById } from "../Api/newsApi";
+import { getNewsCategory, toSectionSlug, toSlug } from "../utils/paths";
 import { getLayout } from "../Api/layoutApi";
 import { getAdminConfig } from "../Api/adminApi";
 import { getNewsPageConfig } from "../Api/newsPageApi";
@@ -118,6 +119,7 @@ export const SiteDataProvider = ({ children }) => {
   const newsIdSetRef = useRef(new Set());
   const newsQueueRef = useRef([]);
   const newsQueueRunningRef = useRef(false);
+  const newsSlugLoadingRef = useRef(new Set());
 
   useEffect(() => {
     const nextSet = new Set();
@@ -244,6 +246,66 @@ export const SiteDataProvider = ({ children }) => {
     [allNews, mergeNewsItem]
   );
 
+  const ensureNewsDetailBySlug = useCallback(
+    async (categorySlug, slug) => {
+      if (!slug) return null;
+      const key = `${categorySlug || "news"}:${slug}`;
+      if (newsSlugLoadingRef.current.has(key)) return null;
+      newsSlugLoadingRef.current.add(key);
+      try {
+        const response = await getNewsBySlug(categorySlug, slug, { timeout: 8000 });
+        let list = [];
+        if (response && typeof response === "object") {
+          if (Array.isArray(response)) {
+            list = response;
+          } else if (Array.isArray(response?.data)) {
+            list = response.data;
+          } else if (response?.news) {
+            list = [response.news];
+          } else {
+            list = [response];
+          }
+        }
+
+        const normalizedSlug = String(slug);
+        const normalizedCategory = categorySlug ? String(categorySlug) : "";
+        let newsItem =
+          list.find((item) => {
+            if (!item) return false;
+            const candidateSlug = toSlug(
+              item?.data?.headline ||
+                item?.dataEn?.headline ||
+                item?.title ||
+                "",
+              8
+            );
+            if (normalizedSlug && candidateSlug !== normalizedSlug) return false;
+            if (normalizedCategory) {
+              const candidateCategory = toSectionSlug(getNewsCategory(item));
+              if (candidateCategory && candidateCategory !== normalizedCategory) {
+                return false;
+              }
+            }
+            return true;
+          }) || null;
+
+        if (!newsItem && list.length > 0) {
+          newsItem = list[0];
+        }
+        if (newsItem) {
+          mergeNewsItem(newsItem);
+        }
+        return newsItem || null;
+      } catch (error) {
+        setError((prev) => prev || "Failed to load news details.");
+        return null;
+      } finally {
+        newsSlugLoadingRef.current.delete(key);
+      }
+    },
+    [mergeNewsItem]
+  );
+
   const isNewsDetailLoading = useCallback(
     (id) => {
       if (id == null) return false;
@@ -284,6 +346,7 @@ export const SiteDataProvider = ({ children }) => {
     newsLoading,
     enqueueNewsSummaries,
     ensureNewsDetail,
+    ensureNewsDetailBySlug,
     isNewsDetailLoading,
     error,
     refresh,

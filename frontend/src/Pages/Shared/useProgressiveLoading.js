@@ -30,7 +30,11 @@ export default function useProgressiveLoading({
 
     if (typeof window !== "undefined" && window.requestAnimationFrame) {
       const raf = window.requestAnimationFrame(hide);
-      return () => window.cancelAnimationFrame(raf);
+      const fallback = window.setTimeout(hide, 300);
+      return () => {
+        window.cancelAnimationFrame(raf);
+        window.clearTimeout(fallback);
+      };
     }
 
     hide();

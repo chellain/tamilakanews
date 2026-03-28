@@ -25,8 +25,8 @@ const PreviewNorContainer4B = ({ newsId, showSeparator = false }) => {
 
 
   const handleNavigate = () => {
-    if (!newsId) return;
-    navigate(buildNewsPath(news || newsId, news?.data?.headline || renderData.content));
+    if (!news) return;
+    navigate(buildNewsPath(news, news?.data?.headline || renderData.content));
   };
 
   return (
@@ -46,4 +46,5 @@ const PreviewNorContainer4B = ({ newsId, showSeparator = false }) => {
 };
 
 export default PreviewNorContainer4B;
+
 

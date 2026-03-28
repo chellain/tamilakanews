@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 
-import luffy from "../../assets/luffy.webp";
-import newsimg from "../../assets/newsimg.avif";
+import luffy from "../../assets/jwt.png";
+import newsimg from "../../assets/jwt.png";
 import { IoSearchSharp, IoSettingsOutline, IoInformationCircleOutline } from "react-icons/io5";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { BiWorld } from "react-icons/bi";
@@ -37,6 +37,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import BigNewsContainer4B from "../Newspaper/Containers_/BigContainer4B";
 import PreviewNorContainer5 from "../Newspaper/PreviewContainers/PreviewNorContainer5";
 import { updateNewsPageConfig } from "../../Api/newsPageApi";
+import { getAllNews } from "../../Api/newsApi";
 import useProgressiveLoading from "../Shared/useProgressiveLoading";
 import BrandLoader from "../Shared/BrandLoader";
 import LazyImage, { ImageLoadProvider } from "../Shared/LazyImage";
@@ -56,6 +57,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     setNewsPageConfig,
     newsLoading,
     ensureNewsDetail,
+    ensureNewsDetailBySlug,
     isNewsDetailLoading,
   } = useSiteData();
   const allPages = adminConfig?.allPages || [];
@@ -98,6 +100,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   }, [isOn]);
 
   const [showCopyToast, setShowCopyToast] = useState(false);
+  const [routeLoading, setRouteLoading] = useState(false);
 
   const categoryList = useMemo(() => {
     const categories = Array.from(
@@ -139,10 +142,55 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   }, []);
 
   const newsSource = language === "en" && translatedNews?.length ? translatedNews : allNews;
-  const numericRouteId =
-    categoryParam && /^[0-9]+$/.test(categoryParam) ? Number(categoryParam) : null;
-  const activeCategorySlug =
-    numericRouteId != null ? "" : categoryParam ? toSectionSlug(categoryParam) : "";
+  const activeCategorySlug = categoryParam ? toSectionSlug(categoryParam) : "";
+
+  const SLUG_CACHE_KEY = "tn_news_slug_map";
+  const SLUG_CACHE_LIMIT = 200;
+
+  const readSlugCache = () => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(SLUG_CACHE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  };
+
+  const writeSlugCache = (map) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(SLUG_CACHE_KEY, JSON.stringify(map));
+    } catch (error) {
+      // ignore storage failures
+    }
+  };
+
+  const makeSlugKey = (categorySlugValue, slugValue) =>
+    `${categorySlugValue || "news"}:${slugValue || ""}`;
+
+  const getCachedNewsId = (categorySlugValue, slugValue) => {
+    if (!slugValue) return null;
+    const map = readSlugCache();
+    const primaryKey = makeSlugKey(categorySlugValue, slugValue);
+    return map[primaryKey] || map[`*:${slugValue}`] || null;
+  };
+
+  const rememberNewsSlug = (categorySlugValue, slugValue, id) => {
+    if (!slugValue || id == null) return;
+    const map = readSlugCache();
+    map[makeSlugKey(categorySlugValue, slugValue)] = String(id);
+    map[`*:${slugValue}`] = String(id);
+    const keys = Object.keys(map);
+    if (keys.length > SLUG_CACHE_LIMIT) {
+      const overflow = keys.length - SLUG_CACHE_LIMIT;
+      keys.slice(0, overflow).forEach((key) => {
+        delete map[key];
+      });
+    }
+    writeSlugCache(map);
+  };
 
   const getHeadlineForSlug = (news) => {
     if (!news) return "";
@@ -172,10 +220,6 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     currentNews =
       newsSource.find((news) => news.id === forcedId) ||
       allNews.find((news) => news.id === forcedId);
-  } else if (numericRouteId != null) {
-    currentNews =
-      newsSource.find((news) => news.id === numericRouteId) ||
-      allNews.find((news) => news.id === numericRouteId);
   } else {
     currentNews = findByRoute(newsSource) || findByRoute(allNews);
   }
@@ -199,6 +243,20 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     currentNews = allNews[0];
   }
   const MLayout = 1;
+
+  useEffect(() => {
+    if (!currentNews || typeof window === "undefined") return;
+    try {
+      const savedSlug = toSlug(getHeadlineForSlug(currentNews));
+      const savedCategory = toSectionSlug(getNewsCategory(currentNews));
+      window.localStorage.setItem("tn_last_news_id", String(currentNews.id));
+      window.localStorage.setItem("tn_last_news_slug", savedSlug);
+      window.localStorage.setItem("tn_last_news_category", savedCategory);
+      rememberNewsSlug(savedCategory, savedSlug, currentNews.id);
+    } catch (error) {
+      // ignore storage failures
+    }
+  }, [currentNews]);
 
   useEffect(() => {
     if (!currentNews) return;
@@ -266,6 +324,20 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     (language === "en" ? sliderConfig?.header?.eng : sliderConfig?.header?.tam) ||
     defaultHeaderBySection("slider");
 
+  const pickRandomIds = (category, count, excludeId = null) => {
+    const pool = filterNewsByCategory(category, allNews);
+    const ids = pool
+      .map((n) => n.id)
+      .filter((id) => (excludeId == null ? true : id !== excludeId));
+
+    const shuffled = [...ids];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, Math.min(count, shuffled.length));
+  };
+
   const sideIds = resolveDisplayIds(sideConfig, sideConfig?.count || 5);
   const sliderIds = resolveDisplayIds(sliderConfig, sliderConfig?.count || 6);
   const sideDisplayIds = useMemo(() => {
@@ -316,19 +388,6 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     setEditSection(null);
   };
 
-  const pickRandomIds = (category, count, excludeId = null) => {
-    const pool = filterNewsByCategory(category, allNews);
-    const ids = pool
-      .map((n) => n.id)
-      .filter((id) => (excludeId == null ? true : id !== excludeId));
-
-    const shuffled = [...ids];
-    for (let i = shuffled.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, Math.min(count, shuffled.length));
-  };
 
   const handleSaveSection = async () => {
     if (!editSection) return;
@@ -426,7 +485,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   const remainingContainerCount = Math.max(0, containerOverlays.length - visibleContainerCount);
 
   const thumb = (() => {
-    if (!displayData?.thumbnail) return { url: luffy, isVideo: false };
+    if (!displayData?.thumbnail) return null;
 
     let url = null;
     let isVideo = false;
@@ -443,11 +502,15 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
       isVideo = displayData.thumbnail.type?.startsWith("video/");
     }
 
+    if (!url) return null;
+
     return {
-      url: url || luffy,
+      url,
       isVideo,
     };
   })();
+
+  const hasThumb = !!thumb?.url;
 
   const pagePath = currentNews ? buildNewsPath(currentNews) : "";
   const pageUrl =
@@ -467,13 +530,14 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   };
 
   const shareImage = (() => {
+    if (!hasThumb) return "";
     const candidate = thumb.isVideo ? displayData?.thumbnail : thumb.url;
     if (
       !candidate ||
       (typeof candidate === "string" &&
         (candidate.startsWith("blob:") || candidate.startsWith("data:")))
     ) {
-      return resolveAbsoluteUrl(luffy);
+      return "";
     }
     return resolveAbsoluteUrl(candidate);
   })();
@@ -531,14 +595,6 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     return () => window.clearTimeout(timer);
   }, [showCopyToast]);
 
-  if (newsLoading && !currentNews) {
-    return <div style={{ padding: 40 }}>Loading news...</div>;
-  }
-
-  if (!currentNews) {
-    return <div style={{ padding: 40 }}>No news selected for preview.</div>;
-  }
-
   const shareLinks = [
     {
       id: "whatsapp",
@@ -584,10 +640,87 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
   useEffect(() => {
     if (currentNews) return;
-    if (numericRouteId == null) return;
-    if (isNewsDetailLoading?.(numericRouteId)) return;
-    ensureNewsDetail(numericRouteId);
-  }, [currentNews, numericRouteId, ensureNewsDetail, isNewsDetailLoading]);
+    if (!slug) return;
+    let cancelled = false;
+    const loadBySlug = async () => {
+      setRouteLoading(true);
+      try {
+        const categoryKey = activeCategorySlug || categoryParam || "";
+        const cachedId = getCachedNewsId(categoryKey, slug);
+        if (cachedId) {
+          const cachedDetail = await ensureNewsDetail(cachedId);
+          if (cachedDetail || cancelled) return;
+        }
+
+        const fetched = await ensureNewsDetailBySlug?.(categoryKey, slug);
+        if (fetched || cancelled) return;
+        if (typeof window === "undefined") return;
+        const lastSlug = window.localStorage.getItem("tn_last_news_slug");
+        const lastId = window.localStorage.getItem("tn_last_news_id");
+        const lastCategory = window.localStorage.getItem("tn_last_news_category");
+        const categoryMatches =
+          !activeCategorySlug || !lastCategory || lastCategory === activeCategorySlug;
+        if (lastId && lastSlug === slug && categoryMatches) {
+          await ensureNewsDetail(lastId);
+          return;
+        }
+
+        // Last-resort fallback: fetch list and resolve by slug.
+        try {
+          const list = await getAllNews({ view: "summary" });
+          if (!Array.isArray(list)) return;
+          const match = list.find((item) => {
+            const candidateSlug = toSlug(
+              item?.data?.headline ||
+                item?.dataEn?.headline ||
+                item?.title ||
+                "",
+              8
+            );
+            if (candidateSlug !== slug) return false;
+            if (activeCategorySlug) {
+              const candidateCategory = toSectionSlug(getNewsCategory(item));
+              if (candidateCategory && candidateCategory !== activeCategorySlug) {
+                return false;
+              }
+            }
+            return true;
+          });
+          if (match?.id != null) {
+            await ensureNewsDetail(match.id);
+          }
+        } catch (error) {
+          // ignore list fallback errors
+        }
+      } finally {
+        if (!cancelled) setRouteLoading(false);
+      }
+    };
+    loadBySlug();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentNews,
+    slug,
+    activeCategorySlug,
+    categoryParam,
+    ensureNewsDetailBySlug,
+    ensureNewsDetail,
+  ]);
+
+
+  if (newsLoading && !currentNews) {
+    return <div style={{ padding: 40 }}>Loading news...</div>;
+  }
+
+  if (routeLoading && !currentNews) {
+    return <div style={{ padding: 40 }}>Loading news...</div>;
+  }
+
+  if (!currentNews) {
+    return <div style={{ padding: 40 }}>No news selected for preview.</div>;
+  }
 
   const handleNavigatePage = (pageName) => {
     const nextPage = String(pageName || "main").toLowerCase();
@@ -614,7 +747,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
         <meta name="description" content={shareDescription} />
         <meta property="og:title" content={shareTitle} />
         <meta property="og:description" content={shareDescription} />
-        <meta property="og:image" content={shareImage} />
+        {shareImage && <meta property="og:image" content={shareImage} />}
         {pageUrl && <meta property="og:url" content={pageUrl} />}
         <meta property="og:type" content="article" />
         <meta property="og:site_name" content="Tamilaka News" />
@@ -657,7 +790,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
               <div className="mannsw-sc-oneliner">
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{displayData.oneLiner}
               </div>
-              {!currentNews.hiddenElements?.thumbnail && (
+              {!currentNews.hiddenElements?.thumbnail && hasThumb && (
                 <div className="mannsw-sc-tmbnl">
                   {thumb.isVideo ? (
                     <video

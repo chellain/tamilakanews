@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import timeFun from "../Containers_/timeFun";
-import jwt from "../../../assets/jwt.jpg";
+import jwt from "../../../assets/jwt.png";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 import { useMobile } from "../Components2/PagePreview";
@@ -81,8 +81,8 @@ const PreviewUniversalNewsContainer = ({
     : DEFAULT_DATA;
 
   const handleNavigate = () => {
-    if (!newsId) return;
-    navigate(buildNewsPath(news || newsId, renderData.headline));
+    if (!news) return;
+    navigate(buildNewsPath(news, renderData.headline));
   };
 
   const imageStyle = {
@@ -281,5 +281,7 @@ const PreviewUniversalNewsContainer = ({
 };
 
 export default PreviewUniversalNewsContainer;
+
+
 
 

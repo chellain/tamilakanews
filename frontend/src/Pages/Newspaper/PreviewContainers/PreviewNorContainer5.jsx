@@ -1,7 +1,7 @@
 import { useState } from "react";
 import timeFun from "../Containers_/timeFun";
 import { useNavigate } from "react-router-dom";
-import jwt from "../../../assets/jwt.jpg";
+import jwt from "../../../assets/jwt.png";
 import { useSiteData } from "../../../context/SiteDataContext";
 import { findSliderSlotItem, findSlotItem } from "../../../context/layoutHelpers";
 import LazyImage from "../../Shared/LazyImage";
@@ -85,8 +85,8 @@ const PreviewNorContainer5 = ({
     : DEFAULT_DATA;
 
   const handleNavigate = () => {
-    if (!newsId) return;
-    navigate(buildNewsPath(news || newsId, renderData.headline));
+    if (!news) return;
+    navigate(buildNewsPath(news, renderData.headline));
   };
 
   // FIX: Pink text on hover
@@ -193,15 +193,16 @@ const imgoverly = {
   borderRadius: "5px",
   overflow: "hidden",
   flexShrink: 0,
-  backgroundColor: "rgba(255,255,255,0.04)",
 };
 
 const imgstyle = {
   width: "100%",
   height: "100%",
-  objectFit: "contain",
+  objectFit: "cover",
 };
 
 export default PreviewNorContainer5;
+
+
 
 
