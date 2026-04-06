@@ -17,9 +17,8 @@ import Sidebar from "../Newspaper/Components/Sidebar";
 import "../Newspaper/newspaper.scss";
 import "../Newspaper/PreviewContainers/previewcont.css";
 import "./Previewpge.scss";
-
 import timeFun from "../Newspaper/Containers_/timeFun";
-import AdBox from '../Newspaper/Components/AdBox';
+// import AdBox from '../Newspaper/Components/AdBox';
 import Newsheader from '../Newspaper/Components/Newsheader';
 import Line from "../Newspaper/Components/Line";
 import { useSiteData } from "../../context/SiteDataContext";
