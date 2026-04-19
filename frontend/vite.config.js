@@ -33,7 +33,7 @@ const resolveApiUrl = (baseUrl) => {
 const resolveNewsUrl = (baseUrl, news) => {
   const safeBase = baseUrl.replace(/\/$/, "");
   const pathPart = buildNewsPath(news);
-  return `${safeBase}/#${pathPart}`;
+  return `${safeBase}${pathPart}`;
 };
 
 const buildNewsSitemapXml = ({

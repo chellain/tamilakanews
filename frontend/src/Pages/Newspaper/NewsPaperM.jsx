@@ -24,8 +24,7 @@ export default function NewsPaperM() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState(() => {
     if (section) return sectionNameFromPath(section);
-    if (typeof window === "undefined") return "main";
-    return window.localStorage.getItem("tn_activePage") || "main";
+    return "main";
   });
   
   const themeStyle = {
@@ -59,8 +58,8 @@ export default function NewsPaperM() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("tn_activePage", activePage);
-  }, [activePage]);
+    window.localStorage.removeItem("tn_activePage");
+  }, []);
 
   useEffect(() => {
     const nextPage = section ? sectionNameFromPath(section) : "main";

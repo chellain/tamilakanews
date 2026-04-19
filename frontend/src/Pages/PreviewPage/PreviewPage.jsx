@@ -39,7 +39,17 @@ import { getAllNews } from "../../Api/newsApi";
 import useProgressiveLoading from "../Shared/useProgressiveLoading";
 import BrandLoader from "../Shared/BrandLoader";
 import LazyImage, { ImageLoadProvider } from "../Shared/LazyImage";
-import { buildNewsPath, getNewsCategory, toSectionSlug, toSlug } from "../../utils/paths";
+import {
+  buildNewsPath,
+  buildSectionPath,
+  getNewsCategorySlugCandidates,
+  getNewsRouteCategory,
+  getNewsRouteHeadline,
+  getNewsSlugCandidates,
+  getNewsCategory,
+  toSectionSlug,
+  toSlug,
+} from "../../utils/paths";
 import { Helmet } from "react-helmet";
 import JsonLd from "../../Shared/JsonLd";
 
@@ -190,22 +200,19 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     writeSlugCache(map);
   };
 
-  const getHeadlineForSlug = (news) => {
-    if (!news) return "";
-    if (language === "en") {
-      return news.dataEn?.headline || news.data?.headline || news.title || "";
-    }
-    return news.data?.headline || news.title || "";
-  };
-
   const matchesRoute = (news) => {
     if (!news) return false;
     if (activeCategorySlug) {
-      const newsCategorySlug = toSectionSlug(getNewsCategory(news));
-      if (newsCategorySlug && newsCategorySlug !== activeCategorySlug) return false;
+      const newsCategorySlugs = getNewsCategorySlugCandidates(news).filter(Boolean);
+      if (
+        newsCategorySlugs.length > 0 &&
+        !newsCategorySlugs.includes(activeCategorySlug)
+      ) {
+        return false;
+      }
     }
     if (slug) {
-      return toSlug(getHeadlineForSlug(news)) === slug;
+      return getNewsSlugCandidates(news).includes(slug);
     }
     return true;
   };
@@ -225,15 +232,15 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   if (!currentNews && activeCategorySlug) {
     currentNews =
       newsSource.find(
-        (news) => toSectionSlug(getNewsCategory(news)) === activeCategorySlug
+        (news) => getNewsCategorySlugCandidates(news).includes(activeCategorySlug)
       ) ||
       allNews.find(
-        (news) => toSectionSlug(getNewsCategory(news)) === activeCategorySlug
+        (news) => getNewsCategorySlugCandidates(news).includes(activeCategorySlug)
       );
   }
 
   if (!currentNews && slug) {
-    const slugMatch = (news) => toSlug(getHeadlineForSlug(news)) === slug;
+    const slugMatch = (news) => getNewsSlugCandidates(news).includes(slug);
     currentNews = newsSource.find(slugMatch) || allNews.find(slugMatch);
   }
 
@@ -245,8 +252,12 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   useEffect(() => {
     if (!currentNews || typeof window === "undefined") return;
     try {
-      const savedSlug = toSlug(getHeadlineForSlug(currentNews));
-      const savedCategory = toSectionSlug(getNewsCategory(currentNews));
+      const savedSlug =
+        getNewsSlugCandidates(currentNews)[0] ||
+        toSlug(getNewsRouteHeadline(currentNews));
+      const savedCategory =
+        getNewsCategorySlugCandidates(currentNews)[0] ||
+        toSectionSlug(getNewsRouteCategory(currentNews) || getNewsCategory(currentNews));
       window.localStorage.setItem("tn_last_news_id", String(currentNews.id));
       window.localStorage.setItem("tn_last_news_slug", savedSlug);
       window.localStorage.setItem("tn_last_news_category", savedCategory);
@@ -338,34 +349,46 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
   const sideIds = resolveDisplayIds(sideConfig, sideConfig?.count || 5);
   const sliderIds = resolveDisplayIds(sliderConfig, sliderConfig?.count || 6);
-  const sideDisplayIds = useMemo(() => {
+  const resolveSectionDisplayIds = (sectionConfig, configuredIds, fallbackCount) => {
     const excludeId = currentNews?.id ?? null;
-    if (sideConfig?.deliveryType === "shuffle") {
-      const count = Number(sideConfig?.count || 5);
-      return pickRandomIds(sideConfig?.category, count, excludeId);
-    }
-    const baseIds =
-      excludeId == null ? sideIds : sideIds.filter((id) => id !== excludeId);
+    const excludeKey = excludeId == null ? null : String(excludeId);
     const desiredCount = Number(
-      sideConfig?.count || (Array.isArray(sideIds) ? sideIds.length : 0)
+      sectionConfig?.count || (Array.isArray(configuredIds) ? configuredIds.length : fallbackCount || 0)
     );
+
+    if (sectionConfig?.deliveryType === "shuffle") {
+      return pickRandomIds(sectionConfig?.category, desiredCount, excludeId);
+    }
+
+    const baseIds = (Array.isArray(configuredIds) ? configuredIds : []).filter((id) =>
+      excludeKey == null ? true : String(id) !== excludeKey
+    );
+
     if (!desiredCount || baseIds.length >= desiredCount) {
       return desiredCount ? baseIds.slice(0, desiredCount) : baseIds;
     }
-    const pool = filterNewsByCategory(sideConfig?.category, allNews);
-    const poolIds = pool.map((n) => n.id);
-    const extras = poolIds.filter(
-      (id) => id !== excludeId && !baseIds.includes(id)
-    );
+
+    const pool = filterNewsByCategory(sectionConfig?.category, allNews);
+    const extras = pool
+      .map((n) => n.id)
+      .filter((id) => {
+        const idKey = String(id);
+        if (excludeKey != null && idKey === excludeKey) return false;
+        return !baseIds.some((baseId) => String(baseId) === idKey);
+      });
+
     return baseIds.concat(extras.slice(0, desiredCount - baseIds.length));
-  }, [
-    sideConfig?.deliveryType,
-    sideConfig?.count,
-    sideConfig?.category,
-    sideIds,
-    currentNews?.id,
-    allNews,
-  ]);
+  };
+
+  const sideDisplayIds = useMemo(
+    () => resolveSectionDisplayIds(sideConfig, sideIds, 5),
+    [sideConfig, sideIds, currentNews?.id, allNews]
+  );
+
+  const sliderDisplayIds = useMemo(
+    () => resolveSectionDisplayIds(sliderConfig, sliderIds, 6),
+    [sliderConfig, sliderIds, currentNews?.id, allNews]
+  );
 
   const openSettings = (sectionKey) => {
     const section = sectionKey === "slider" ? sliderConfig : sideConfig;
@@ -513,7 +536,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   const pagePath = currentNews ? buildNewsPath(currentNews) : "";
   const pageUrl =
     typeof window !== "undefined" && pagePath
-      ? `${window.location.origin}/#${pagePath}`
+      ? new URL(pagePath, window.location.origin).toString()
       : "";
 
   const resolveAbsoluteUrl = (url) => {
@@ -668,17 +691,14 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
           const list = await getAllNews({ view: "summary" });
           if (!Array.isArray(list)) return;
           const match = list.find((item) => {
-            const candidateSlug = toSlug(
-              item?.data?.headline ||
-                item?.dataEn?.headline ||
-                item?.title ||
-                "",
-              8
-            );
-            if (candidateSlug !== slug) return false;
+            const candidateSlugs = getNewsSlugCandidates(item);
+            if (!candidateSlugs.includes(slug)) return false;
             if (activeCategorySlug) {
-              const candidateCategory = toSectionSlug(getNewsCategory(item));
-              if (candidateCategory && candidateCategory !== activeCategorySlug) {
+              const candidateCategories = getNewsCategorySlugCandidates(item).filter(Boolean);
+              if (
+                candidateCategories.length > 0 &&
+                !candidateCategories.includes(activeCategorySlug)
+              ) {
                 return false;
               }
             }
@@ -709,11 +729,21 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
 
   if (newsLoading && !currentNews) {
-    return <div style={{ padding: 40 }}>Loading news...</div>;
+    return (
+      <>
+        <BrandLoader show={true} fading={false} />
+        <div style={{ ...themeStyle, minHeight: "100vh" }} />
+      </>
+    );
   }
 
   if (routeLoading && !currentNews) {
-    return <div style={{ padding: 40 }}>Loading news...</div>;
+    return (
+      <>
+        <BrandLoader show={true} fading={false} />
+        <div style={{ ...themeStyle, minHeight: "100vh" }} />
+      </>
+    );
   }
 
   if (!currentNews) {
@@ -723,9 +753,9 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   const handleNavigatePage = (pageName) => {
     const nextPage = String(pageName || "main").toLowerCase();
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("tn_activePage", nextPage);
+      window.localStorage.removeItem("tn_activePage");
     }
-    navigate("/");
+    navigate(buildSectionPath(nextPage));
   };
 
   const renderSkeletonStack = (count) =>
@@ -992,7 +1022,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
         
         <div className="npmc-c3">
           <AutoScrollContainer gap={0} autoScrollDelay={10000} autoTranslateX={310} manualTranslateX={310}>
-            {sliderIds.map((newsId, idx) => (
+            {sliderDisplayIds.map((newsId, idx) => (
               <BigNewsContainer4B
                 key={`${newsId}-${idx}`}
                 newsId={newsId}

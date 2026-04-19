@@ -1,6 +1,6 @@
 ﻿
 import "./App.css";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import PreviewPage from "./Pages/PreviewPage/PreviewPage";
 import NewsPaperM from "./Pages/Newspaper/NewsPaperM";
@@ -42,16 +42,35 @@ function AppContent() {
   return (
     <>
       <BrandLoader show={showBrandLoader} fading={brandFading} />
-      <HashRouter>
+      <BrowserRouter>
+        <LegacyHashRedirect />
         <Routes>
           <Route path="/" element={<NewsPaperM />} />
           <Route path="/section/:section" element={<NewsPaperM />} />
           <Route path="/preview/:category/:slug?" element={<PreviewPage />} />
           <Route path="/news/:category/:slug?" element={<PreviewPage />} />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </>
   );
+}
+
+function LegacyHashRedirect() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const rawHash = window.location.hash || "";
+    if (!rawHash.startsWith("#/")) return;
+
+    const target = rawHash.slice(1);
+    if (!target || target === location.pathname) return;
+
+    navigate(target, { replace: true });
+  }, [location.pathname, navigate]);
+
+  return null;
 }
 
 export default App;

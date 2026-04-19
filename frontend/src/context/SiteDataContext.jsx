@@ -1,6 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { getNewsById, getNewsBySlug, getNewsSummaryById } from "../Api/newsApi";
-import { getNewsCategory, toSectionSlug, toSlug } from "../utils/paths";
+import {
+  getNewsCategorySlugCandidates,
+  getNewsSlugCandidates,
+} from "../utils/paths";
 import { getLayout } from "../Api/layoutApi";
 import { getAdminConfig } from "../Api/adminApi";
 import { getNewsPageConfig } from "../Api/newsPageApi";
@@ -272,17 +275,16 @@ export const SiteDataProvider = ({ children }) => {
         let newsItem =
           list.find((item) => {
             if (!item) return false;
-            const candidateSlug = toSlug(
-              item?.data?.headline ||
-                item?.dataEn?.headline ||
-                item?.title ||
-                "",
-              8
-            );
-            if (normalizedSlug && candidateSlug !== normalizedSlug) return false;
+            const candidateSlugs = getNewsSlugCandidates(item);
+            if (normalizedSlug && !candidateSlugs.includes(normalizedSlug)) {
+              return false;
+            }
             if (normalizedCategory) {
-              const candidateCategory = toSectionSlug(getNewsCategory(item));
-              if (candidateCategory && candidateCategory !== normalizedCategory) {
+              const candidateCategories = getNewsCategorySlugCandidates(item).filter(Boolean);
+              if (
+                candidateCategories.length > 0 &&
+                !candidateCategories.includes(normalizedCategory)
+              ) {
                 return false;
               }
             }

@@ -39,6 +39,15 @@ const normalizeCategory = (category) => {
   return category || "";
 };
 
+const uniqueNonEmpty = (...values) =>
+  Array.from(
+    new Set(
+      values
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+    )
+  );
+
 export const getNewsCategory = (news) => {
   if (!news) return "";
   const fromData = news.data?.zonal ?? news.data?.category ?? news.data?.section ?? news.category;
@@ -46,19 +55,50 @@ export const getNewsCategory = (news) => {
   return normalizeCategory(fromData || fromDataEn);
 };
 
+export const getNewsHeadlineCandidates = (news) => {
+  if (!news) return [];
+  return uniqueNonEmpty(
+    news.dataEn?.headline,
+    news.data?.headline,
+    news.title
+  );
+};
+
+export const getNewsCategoryCandidates = (news) => {
+  if (!news) return [];
+  const fromData = normalizeCategory(
+    news.data?.zonal ?? news.data?.category ?? news.data?.section ?? news.category
+  );
+  const fromDataEn = normalizeCategory(
+    news.dataEn?.zonal ?? news.dataEn?.category ?? news.dataEn?.section
+  );
+  return uniqueNonEmpty(fromDataEn, fromData);
+};
+
+export const getNewsRouteHeadline = (news) =>
+  getNewsHeadlineCandidates(news)[0] || "";
+
+export const getNewsRouteCategory = (news) =>
+  getNewsCategoryCandidates(news)[0] || "";
+
+export const getNewsSlugCandidates = (news, maxWords = 8) =>
+  getNewsHeadlineCandidates(news).map((headline) => toSlug(headline, maxWords));
+
+export const getNewsCategorySlugCandidates = (news) =>
+  getNewsCategoryCandidates(news).map((category) => toSectionSlug(category));
+
 export const buildNewsPath = (newsOrId, headline, options = {}) => {
   let title = "";
   let category = options.category;
 
   if (newsOrId && typeof newsOrId === "object") {
     title =
-      newsOrId.data?.headline ||
-      newsOrId.dataEn?.headline ||
+      getNewsRouteHeadline(newsOrId) ||
       newsOrId.title ||
       headline ||
       "";
     if (!category) {
-      category = getNewsCategory(newsOrId);
+      category = getNewsRouteCategory(newsOrId) || getNewsCategory(newsOrId);
     }
   } else {
     title = headline || "";
