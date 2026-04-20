@@ -57,7 +57,9 @@ const PreviewNorContainer5 = ({
       : showSeparatorProp || false;
 
   const newsSource = language === "en" ? translatedNews : allNews;
-  const news = newsSource.find((n) => n.id === newsId);
+  const news = newsSource.find(
+    (n) => String(n?.id ?? n?._id ?? "") === String(newsId ?? "")
+  );
 
   const DEFAULT_DATA = {
     image: jwt,

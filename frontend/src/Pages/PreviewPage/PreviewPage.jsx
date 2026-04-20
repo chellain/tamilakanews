@@ -73,6 +73,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     adminConfig,
     setNewsPageConfig,
     newsLoading,
+    enqueueNewsSummaries,
     ensureNewsIndex,
     ensureNewsDetail,
     ensureNewsDetailBySlug,
@@ -451,6 +452,14 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     relatedNewsTargetCount > 0 &&
     relatedNewsVisibleCount < relatedNewsTargetCount &&
     newsLoading;
+
+  useEffect(() => {
+    const relatedIds = Array.from(
+      new Set([...sideDisplayIds, ...sliderDisplayIds].filter((id) => id != null))
+    );
+    if (relatedIds.length === 0) return;
+    enqueueNewsSummaries?.(relatedIds);
+  }, [enqueueNewsSummaries, sideDisplayIds, sliderDisplayIds]);
 
   const openSettings = (sectionKey) => {
     const section = sectionKey === "slider" ? sliderConfig : sideConfig;
@@ -839,12 +848,20 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
       <Helmet>
         <title>{`${shareTitle} | Tamilaka News`}</title>
         <meta name="description" content={shareDescription} />
+        {pageUrl && <link rel="canonical" href={pageUrl} />}
         <meta property="og:title" content={shareTitle} />
         <meta property="og:description" content={shareDescription} />
         {shareImage && <meta property="og:image" content={shareImage} />}
         {pageUrl && <meta property="og:url" content={pageUrl} />}
         <meta property="og:type" content="article" />
         <meta property="og:site_name" content="Tamilaka News" />
+        {publishedIso && (
+          <meta property="article:published_time" content={publishedIso} />
+        )}
+        <meta name="twitter:card" content={shareImage ? "summary_large_image" : "summary"} />
+        <meta name="twitter:title" content={shareTitle} />
+        <meta name="twitter:description" content={shareDescription} />
+        {shareImage && <meta name="twitter:image" content={shareImage} />}
         <JsonLd data={newsJsonLd} />
       </Helmet>
       <BrandLoader show={showBrandLoader} fading={brandFading} />

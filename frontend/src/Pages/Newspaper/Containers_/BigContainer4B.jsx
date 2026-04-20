@@ -17,7 +17,9 @@ const BigNewsContainer4B = ({
 
   const newsToShow = (language === "en" ? translatedNews : allNews) || [];
 
-  const news = newsToShow.find((n) => n.id === newsId);
+  const news = newsToShow.find(
+    (n) => String(n?.id ?? n?._id ?? "") === String(newsId ?? "")
+  );
 
   const DEFAULT_DATA = {
     image: jwt,
