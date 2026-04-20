@@ -53,6 +53,15 @@ import {
 import { Helmet } from "react-helmet";
 import JsonLd from "../../Shared/JsonLd";
 
+const normalizeNewsListResponse = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.news)) return payload.news;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+};
+
 export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   const { category: categoryParam, slug } = useParams();
   const navigate = useNavigate();
@@ -64,6 +73,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     adminConfig,
     setNewsPageConfig,
     newsLoading,
+    ensureNewsIndex,
     ensureNewsDetail,
     ensureNewsDetailBySlug,
     isNewsDetailLoading,
@@ -108,7 +118,11 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   }, [isOn]);
 
   const [showCopyToast, setShowCopyToast] = useState(false);
-  const [routeLoading, setRouteLoading] = useState(false);
+  const shouldResolveRouteBySlug = forcedNewsId == null && !!slug;
+  const [routeLoading, setRouteLoading] = useState(() => shouldResolveRouteBySlug);
+  const [routeLookupFinished, setRouteLookupFinished] = useState(
+    () => !shouldResolveRouteBySlug
+  );
 
   const categoryList = useMemo(() => {
     const categories = Array.from(
@@ -244,10 +258,25 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     currentNews = newsSource.find(slugMatch) || allNews.find(slugMatch);
   }
 
-  if (!currentNews && allNews.length > 0) {
+  if (!currentNews && !slug && !activeCategorySlug && allNews.length > 0) {
     currentNews = allNews[0];
   }
   const MLayout = 1;
+
+  useEffect(() => {
+    if (!shouldResolveRouteBySlug || currentNews) {
+      setRouteLoading(false);
+      setRouteLookupFinished(true);
+      return;
+    }
+
+    setRouteLoading(true);
+    setRouteLookupFinished(false);
+  }, [shouldResolveRouteBySlug, currentNews?.id, slug, activeCategorySlug]);
+
+  useEffect(() => {
+    ensureNewsIndex?.();
+  }, [ensureNewsIndex]);
 
   useEffect(() => {
     if (!currentNews || typeof window === "undefined") return;
@@ -389,6 +418,39 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     () => resolveSectionDisplayIds(sliderConfig, sliderIds, 6),
     [sliderConfig, sliderIds, currentNews?.id, allNews]
   );
+
+  const availableNewsIdSet = useMemo(
+    () =>
+      new Set(
+        allNews.map((item) => String(item?.id ?? item?._id ?? "")).filter(Boolean)
+      ),
+    [allNews]
+  );
+
+  const visibleSideIds = useMemo(
+    () => sideDisplayIds.filter((id) => availableNewsIdSet.has(String(id))),
+    [sideDisplayIds, availableNewsIdSet]
+  );
+
+  const visibleSliderIds = useMemo(
+    () => sliderDisplayIds.filter((id) => availableNewsIdSet.has(String(id))),
+    [sliderDisplayIds, availableNewsIdSet]
+  );
+
+  const relatedNewsTargetCount = useMemo(
+    () => new Set([...sideDisplayIds, ...sliderDisplayIds].map((id) => String(id))).size,
+    [sideDisplayIds, sliderDisplayIds]
+  );
+
+  const relatedNewsVisibleCount = useMemo(
+    () => new Set([...visibleSideIds, ...visibleSliderIds].map((id) => String(id))).size,
+    [visibleSideIds, visibleSliderIds]
+  );
+
+  const relatedSectionsLoading =
+    relatedNewsTargetCount > 0 &&
+    relatedNewsVisibleCount < relatedNewsTargetCount &&
+    newsLoading;
 
   const openSettings = (sectionKey) => {
     const section = sectionKey === "slider" ? sliderConfig : sideConfig;
@@ -661,10 +723,11 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
   useEffect(() => {
     if (currentNews) return;
-    if (!slug) return;
+    if (!shouldResolveRouteBySlug) return;
     let cancelled = false;
     const loadBySlug = async () => {
       setRouteLoading(true);
+      setRouteLookupFinished(false);
       try {
         const categoryKey = activeCategorySlug || categoryParam || "";
         const cachedId = getCachedNewsId(categoryKey, slug);
@@ -688,8 +751,12 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
         // Last-resort fallback: fetch list and resolve by slug.
         try {
-          const list = await getAllNews({ view: "summary" });
-          if (!Array.isArray(list)) return;
+          const listResponse = await getAllNews({
+            view: "summary",
+            category: categoryKey || undefined,
+          });
+          const list = normalizeNewsListResponse(listResponse);
+          if (list.length === 0) return;
           const match = list.find((item) => {
             const candidateSlugs = getNewsSlugCandidates(item);
             if (!candidateSlugs.includes(slug)) return false;
@@ -711,7 +778,10 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
           // ignore list fallback errors
         }
       } finally {
-        if (!cancelled) setRouteLoading(false);
+        if (!cancelled) {
+          setRouteLoading(false);
+          setRouteLookupFinished(true);
+        }
       }
     };
     loadBySlug();
@@ -721,23 +791,19 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
   }, [
     currentNews,
     slug,
+    shouldResolveRouteBySlug,
     activeCategorySlug,
     categoryParam,
     ensureNewsDetailBySlug,
     ensureNewsDetail,
   ]);
 
+  const showRouteLoader =
+    !currentNews &&
+    shouldResolveRouteBySlug &&
+    (routeLoading || !routeLookupFinished);
 
-  if (newsLoading && !currentNews) {
-    return (
-      <>
-        <BrandLoader show={true} fading={false} />
-        <div style={{ ...themeStyle, minHeight: "100vh" }} />
-      </>
-    );
-  }
-
-  if (routeLoading && !currentNews) {
+  if ((newsLoading && !currentNews) || showRouteLoader) {
     return (
       <>
         <BrandLoader show={true} fading={false} />
@@ -995,7 +1061,8 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
           {MLayout === 1 && (
               <Melumnews
                 headerName={sideHeaderText}
-                newsIds={sideDisplayIds}
+                newsIds={visibleSideIds}
+                loading={relatedSectionsLoading}
                 editMode={editMode}
                 onOpenSettings={() => openSettings("side")}
               />
@@ -1022,7 +1089,15 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
         
         <div className="npmc-c3">
           <AutoScrollContainer gap={0} autoScrollDelay={10000} autoTranslateX={310} manualTranslateX={310}>
-            {sliderDisplayIds.map((newsId, idx) => (
+            {relatedSectionsLoading &&
+              Array.from({ length: Math.max(1, Math.min(3, sliderDisplayIds.length || 3)) }).map((_, idx) => (
+                <div key={`slider-skeleton-${idx}`} className="skeleton-card skeleton">
+                  <div className="skeleton skeleton-block" style={{ width: 300, height: 200 }} />
+                  <div className="skeleton skeleton-line" style={{ width: "80%" }} />
+                  <div className="skeleton skeleton-line" style={{ width: "55%" }} />
+                </div>
+              ))}
+            {!relatedSectionsLoading && visibleSliderIds.map((newsId, idx) => (
               <BigNewsContainer4B
                 key={`${newsId}-${idx}`}
                 newsId={newsId}
@@ -1140,7 +1215,13 @@ function AdvertisementBox({ width = "300px", height = "250px" }) {
   );
 }
 
-function Melumnews({ headerName, newsIds = [], editMode = false, onOpenSettings }) {
+function Melumnews({
+  headerName,
+  newsIds = [],
+  loading = false,
+  editMode = false,
+  onOpenSettings,
+}) {
   return (
     <>
       <div className="mens-side-news">
@@ -1162,10 +1243,23 @@ function Melumnews({ headerName, newsIds = [], editMode = false, onOpenSettings 
           </div>
         </div>
         <div className="mens-in-cont">
-          {newsIds.length === 0 && (
+          {loading &&
+            Array.from({ length: 3 }).map((_, idx) => (
+              <React.Fragment key={`melum-skeleton-${idx}`}>
+                <div className="skeleton-card skeleton">
+                  <div className="skeleton skeleton-line" style={{ width: "90%" }} />
+                  <div className="skeleton skeleton-line" style={{ width: "75%" }} />
+                  <div className="skeleton skeleton-block" style={{ height: 80 }} />
+                </div>
+                {idx < 2 && (
+                  <Line direction="H" length="100%" thickness="0.5px" color="#b6b6b6ff" />
+                )}
+              </React.Fragment>
+            ))}
+          {!loading && newsIds.length === 0 && (
             <div className="npe-empty">No news selected.</div>
           )}
-          {newsIds.map((newsId, idx) => (
+          {!loading && newsIds.map((newsId, idx) => (
             <React.Fragment key={`${newsId}-${idx}`}>
               <PreviewNorContainer5 newsId={newsId} version={2} />
               {idx < newsIds.length - 1 && (

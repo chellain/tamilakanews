@@ -1,7 +1,23 @@
 import api from "./axiosConfig";
 
-export const getAllNews = async () => {
-  const response = await api.get("/news");
+export const getAllNews = async (options = {}) => {
+  const {
+    params = {},
+    view,
+    category,
+    slug,
+    ...requestOptions
+  } = options;
+
+  const response = await api.get("/news", {
+    ...requestOptions,
+    params: {
+      ...params,
+      ...(view ? { view } : {}),
+      ...(category ? { category } : {}),
+      ...(slug ? { slug } : {}),
+    },
+  });
   return response.data;
 };
 

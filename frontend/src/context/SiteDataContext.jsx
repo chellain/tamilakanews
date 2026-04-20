@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { getNewsById, getNewsBySlug, getNewsSummaryById } from "../Api/newsApi";
+import { getAllNews, getNewsById, getNewsBySlug, getNewsSummaryById } from "../Api/newsApi";
 import {
   getNewsCategorySlugCandidates,
   getNewsSlugCandidates,
@@ -48,6 +48,15 @@ const buildTranslatedNews = (newsList) => {
       containerOverlays,
     };
   });
+};
+
+const normalizeNewsCollection = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.news)) return payload.news;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
 };
 
 export const SiteDataProvider = ({ children }) => {
@@ -123,6 +132,8 @@ export const SiteDataProvider = ({ children }) => {
   const newsQueueRef = useRef([]);
   const newsQueueRunningRef = useRef(false);
   const newsSlugLoadingRef = useRef(new Set());
+  const newsIndexLoadedRef = useRef(false);
+  const newsIndexPromiseRef = useRef(null);
 
   useEffect(() => {
     const nextSet = new Set();
@@ -167,6 +178,47 @@ export const SiteDataProvider = ({ children }) => {
     });
 
     newsIdSetRef.current.add(idKey);
+  }, []);
+
+  const mergeNewsItems = useCallback((newsItems = []) => {
+    if (!Array.isArray(newsItems) || newsItems.length === 0) return;
+
+    const keyedItems = newsItems
+      .map((item) => {
+        const idKey =
+          item?.id != null
+            ? String(item.id)
+            : item?._id != null
+            ? String(item._id)
+            : null;
+        return idKey ? { idKey, item } : null;
+      })
+      .filter(Boolean);
+
+    if (keyedItems.length === 0) return;
+
+    setAllNews((prev) => {
+      const next = [...prev];
+      const indexMap = new Map(
+        prev.map((item, idx) => [String(item?.id ?? item?._id ?? ""), idx])
+      );
+
+      keyedItems.forEach(({ idKey, item }) => {
+        const existingIndex = indexMap.get(idKey);
+        if (existingIndex == null) {
+          indexMap.set(idKey, next.length);
+          next.push(item);
+          return;
+        }
+        next[existingIndex] = { ...next[existingIndex], ...item };
+      });
+
+      return next;
+    });
+
+    keyedItems.forEach(({ idKey }) => {
+      newsIdSetRef.current.add(idKey);
+    });
   }, []);
 
   const loadNewsSummaryById = useCallback(
@@ -308,6 +360,31 @@ export const SiteDataProvider = ({ children }) => {
     [mergeNewsItem]
   );
 
+  const ensureNewsIndex = useCallback(async () => {
+    if (newsIndexLoadedRef.current) return allNews;
+    if (newsIndexPromiseRef.current) return newsIndexPromiseRef.current;
+
+    const request = (async () => {
+      setNewsLoading(true);
+      try {
+        const response = await getAllNews({ view: "summary" });
+        const list = normalizeNewsCollection(response).map(sanitizeSummary);
+        mergeNewsItems(list);
+        newsIndexLoadedRef.current = true;
+        return list;
+      } catch (error) {
+        setError((prev) => prev || "Failed to load news.");
+        return [];
+      } finally {
+        newsIndexPromiseRef.current = null;
+        setNewsLoading(false);
+      }
+    })();
+
+    newsIndexPromiseRef.current = request;
+    return request;
+  }, [allNews, mergeNewsItems, sanitizeSummary]);
+
   const isNewsDetailLoading = useCallback(
     (id) => {
       if (id == null) return false;
@@ -347,6 +424,7 @@ export const SiteDataProvider = ({ children }) => {
     loading,
     newsLoading,
     enqueueNewsSummaries,
+    ensureNewsIndex,
     ensureNewsDetail,
     ensureNewsDetailBySlug,
     isNewsDetailLoading,
