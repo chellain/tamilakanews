@@ -27,8 +27,6 @@ import { BiFontSize } from "react-icons/bi";
 import {
   FaFacebookF,
   FaWhatsapp,
-  FaTelegramPlane,
-  FaEnvelope,
   FaLink,
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
@@ -610,6 +608,42 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
       ? new URL(pagePath, window.location.origin).toString()
       : "";
 
+  const buildOgShareUrl = () => {
+    if (!pagePath) return pageUrl;
+
+    const configuredOrigin = String(import.meta.env.VITE_OG_SHARE_ORIGIN || "").trim();
+    if (configuredOrigin) {
+      try {
+        const url = new URL("/og", configuredOrigin);
+        url.searchParams.set("path", pagePath);
+        return url.toString();
+      } catch (error) {
+        // fall back to the API/base-origin strategy below
+      }
+    }
+
+    const apiBase = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+    if (/^https?:\/\//i.test(apiBase)) {
+      try {
+        const url = new URL("/og", apiBase);
+        url.searchParams.set("path", pagePath);
+        return url.toString();
+      } catch (error) {
+        // fall back to the same-origin proxy route below
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      const url = new URL("/api/og", window.location.origin);
+      url.searchParams.set("path", pagePath);
+      return url.toString();
+    }
+
+    return pageUrl;
+  };
+
+  const ogShareUrl = buildOgShareUrl();
+
   const resolveAbsoluteUrl = (url) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
@@ -663,13 +697,14 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
       : null;
 
   const handleCopyLink = async () => {
-    if (!pageUrl) return;
+    const urlToCopy = ogShareUrl || pageUrl;
+    if (!urlToCopy) return;
     try {
-      await navigator.clipboard.writeText(pageUrl);
+      await navigator.clipboard.writeText(urlToCopy);
       setShowCopyToast(true);
     } catch (error) {
       const textarea = document.createElement("textarea");
-      textarea.value = pageUrl;
+      textarea.value = urlToCopy;
       textarea.setAttribute("readonly", "");
       textarea.style.position = "absolute";
       textarea.style.left = "-9999px";
@@ -692,7 +727,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
       id: "whatsapp",
       label: "WhatsApp",
       href: `https://wa.me/?text=${encodeURIComponent(
-        `${shareTitle}\n${pageUrl}`
+        `${shareTitle}\n${ogShareUrl}`
       )}`,
       icon: <FaWhatsapp />,
     },
@@ -700,7 +735,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
       id: "facebook",
       label: "Facebook",
       href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-        pageUrl
+        ogShareUrl
       )}`,
       icon: <FaFacebookF />,
     },
@@ -709,7 +744,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
       label: "X",
       href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(
         shareTitle
-      )}&url=${encodeURIComponent(pageUrl)}`,
+      )}&url=${encodeURIComponent(ogShareUrl)}`,
       icon: <FaXTwitter />,
     },
   ];
