@@ -3,7 +3,7 @@ const trimTrailingSlash = (value) => String(value || "").replace(/\/+$/, "");
 const getWindowOrigin = () =>
   typeof window !== "undefined" ? window.location.origin : "";
 
-const getMediaBase = () => {
+const getConfiguredMediaBase = () => {
   const explicitBase = trimTrailingSlash(
     import.meta.env.VITE_MEDIA_ORIGIN ||
       import.meta.env.VITE_UPLOADS_ORIGIN ||
@@ -22,11 +22,17 @@ const getMediaBase = () => {
     }
   }
 
+  return "";
+};
+
+const getMediaBase = () => {
+  const configuredBase = getConfiguredMediaBase();
+  if (configuredBase) return configuredBase;
+
   return trimTrailingSlash(getWindowOrigin());
 };
 
-const toAbsoluteMediaUrl = (pathValue) => {
-  const mediaBase = getMediaBase();
+const toAbsoluteMediaUrl = (pathValue, mediaBase = getMediaBase()) => {
   if (!mediaBase) return pathValue;
 
   try {
@@ -51,7 +57,14 @@ export const resolveMediaUrl = (value) => {
     try {
       const url = new URL(raw);
       if (url.pathname.startsWith("/uploads/")) {
-        return toAbsoluteMediaUrl(`${url.pathname}${url.search}${url.hash}`);
+        const configuredBase = getConfiguredMediaBase();
+        if (!configuredBase) {
+          return raw;
+        }
+        return toAbsoluteMediaUrl(
+          `${url.pathname}${url.search}${url.hash}`,
+          configuredBase
+        );
       }
       return raw;
     } catch (error) {
