@@ -50,6 +50,7 @@ import {
 } from "../../utils/paths";
 import { Helmet } from "react-helmet";
 import JsonLd from "../../Shared/JsonLd";
+import { resolveMediaUrl } from "../../utils/media";
 
 const normalizeNewsListResponse = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -581,7 +582,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     let isVideo = false;
 
     if (typeof displayData.thumbnail === "string") {
-      url = displayData.thumbnail;
+      url = resolveMediaUrl(displayData.thumbnail);
       isVideo =
         displayData.thumbnail.includes(".mp4") ||
         displayData.thumbnail.includes(".webm") ||
@@ -644,17 +645,6 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
 
   const ogShareUrl = buildOgShareUrl();
 
-  const resolveAbsoluteUrl = (url) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
-    if (typeof window === "undefined") return url;
-    try {
-      return new URL(url, window.location.origin).toString();
-    } catch (error) {
-      return url;
-    }
-  };
-
   const shareImage = (() => {
     if (!hasThumb) return "";
     const candidate = thumb.isVideo ? displayData?.thumbnail : thumb.url;
@@ -665,7 +655,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     ) {
       return "";
     }
-    return resolveAbsoluteUrl(candidate);
+    return resolveMediaUrl(candidate);
   })();
 
   const shareTitle = displayData?.headline || "Tamilaka News";
