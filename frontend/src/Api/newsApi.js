@@ -1,4 +1,5 @@
 import api from "./axiosConfig";
+import { normalizeNewsPayload } from "../utils/media";
 
 export const getAllNews = async (options = {}) => {
   const {
@@ -18,19 +19,19 @@ export const getAllNews = async (options = {}) => {
       ...(slug ? { slug } : {}),
     },
   });
-  return response.data;
+  return normalizeNewsPayload(response.data);
 };
 
 export const getNewsSummaryById = async (id) => {
   const response = await api.get(`/news/${id}`, {
     params: { view: "summary" },
   });
-  return response.data;
+  return normalizeNewsPayload(response.data);
 };
 
 export const getNewsById = async (id) => {
   const response = await api.get(`/news/${id}`);
-  return response.data;
+  return normalizeNewsPayload(response.data);
 };
 
 export const getNewsBySlug = async (categorySlug, slug, options = {}) => {
@@ -41,17 +42,17 @@ export const getNewsBySlug = async (categorySlug, slug, options = {}) => {
     },
     timeout: options.timeout ?? 8000,
   });
-  return response.data;
+  return normalizeNewsPayload(response.data);
 };
 
 export const createNews = async (payload) => {
   const response = await api.post("/news", payload);
-  return response.data;
+  return normalizeNewsPayload(response.data);
 };
 
 export const updateNews = async (id, payload) => {
   const response = await api.put(`/news/${id}`, payload);
-  return response.data;
+  return normalizeNewsPayload(response.data);
 };
 
 export const addNewsComment = async (id, comment) => {
