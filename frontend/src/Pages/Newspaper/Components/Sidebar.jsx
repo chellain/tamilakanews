@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { IoClose, IoSunnySharp } from "react-icons/io5";
-import logo from "../../../assets/logo1.png";
+import logo from "../../../assets/New Logo.jpg";
 import { IoSearchSharp } from "react-icons/io5";
 import { BiWorld } from "react-icons/bi";
 import { HiMiniMoon } from "react-icons/hi2";
@@ -218,16 +218,12 @@ export default function Sidebar({ open, onClose, activePage, setActivePage, isOn
 
       {/* Sidebar */}
       <div className={`sb-container${isDark ? " sb-dark" : ""}`}>
-        <div className="nav-c1-logo-v2" style={{ position: "relative" }}>
-          <div className="nav-c1l-t1-v2">
-            <img src={logo} />
-          </div>
-          <div
-            className="nav-c1l-t2-v2"
-            style={{ position: "absolute", transform: "translateY(30px)" }}
-          >
-            நடுநிலை நாளிதழ்
-          </div>
+        <div className="nav-c1-logo-v2" style={{ position: "relative", width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 80 }}>
+          <img 
+            src={logo} 
+            alt="தமிழக நியூஸ் லோகோ" 
+            style={{ maxWidth: '250px', width: '100%', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }} 
+          />
         </div>
 
         {/* Search bar with suggestions */}

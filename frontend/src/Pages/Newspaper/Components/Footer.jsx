@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useRef } from 'react'
 import Line from './Line'
-import logo from "../../../assets/logo1.png";
+import logo from "../../../assets/New Logo.jpg";
 import { RiTwitterXLine } from "react-icons/ri";
 import { RiInstagramFill } from "react-icons/ri";
 import { FaYoutube } from "react-icons/fa";
@@ -82,9 +82,12 @@ export default function Footer({ onNavigatePage }) {
     <Line direction="H" length="100%" thickness="2px" color="#e80d8c"/>
     <div className="foot-con-c1">
        <div className="foot-con-inn">
-                                <div className="nav-c1-logo foot-logo" style={{position: "relative"}}>
-                   <div className="nav-c1l-t1" > <img src={logo}/></div>
-                   <div className="nav-c1l-t2" style={{position: "absolute", transform: "translateY(30px)"}}>நடுநிலை நாளிதழ்</div>
+                <div className="nav-c1-logo foot-logo" style={{ position: "relative", width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 80 }}>
+                  <img 
+                    src={logo} 
+                    alt="தமிழக நியூஸ் லோகோ" 
+                    style={{ maxWidth: '250px', width: '100%', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }} 
+                  />
                 </div>
        </div>
     <div className="foot-con-c11" style={{display: "flex", padding: "0px 150px",justifyContent: "space-between"}}>

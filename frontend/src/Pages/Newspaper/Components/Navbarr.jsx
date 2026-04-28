@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import logo from "../../../assets/logo1.png";
+import logo from "../../../assets/New Logo.jpg";
 import { IoSearchSharp } from "react-icons/io5";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { BiWorld } from "react-icons/bi";
@@ -282,16 +282,12 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
           {isMobile && (
             <div className="nav-c1-date-v2">{getTodayInTamil()}</div>
           )}
-          <div className="nav-c1-logo-v2" style={{ position: "relative", cursor: "pointer" }} onClick={handleLogoClick}>
-            <div className="nav-c1l-t1-v2">
-              <img src={logo} />
-            </div>
-            <div
-              className="nav-c1l-t2-v2"
-              style={{ position: "absolute", fontSize:"15px", transform: "translateY(30px)" }}
-            >
-              நடுநிலை  நாளிதழ்
-            </div>
+          <div className="nav-c1-logo-v2" style={{ position: "relative", cursor: "pointer", width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 80 }} onClick={handleLogoClick}>
+            <img 
+              src={logo} 
+              alt="தமிழக நியூஸ் லோகோ" 
+              style={{ maxWidth: '250px', width: '100%', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }} 
+            />
           </div>
 
           {/* Search bar with suggestions - positioned absolutely to avoid layout shift */}
