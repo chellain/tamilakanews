@@ -618,7 +618,7 @@
     max-width: 1255px;
     width: 100%;
     height: fit-content;
-    padding: 6px;
+    padding: 0;
     overflow: visible;
   }
   .main-screen {
@@ -628,11 +628,12 @@
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     background-color: #e8098c;
-    padding: 0 10px;
+    padding: 0 4px;
     padding-bottom: 60px;
   }
 
   .np-main-cont-ov {
+    align-items: stretch;
     padding-bottom: 20px;
   }
 
@@ -696,7 +697,7 @@
   }
 
   .main-screen {
-    padding: 0 8px;
+    padding: 0 2px;
   }
 
   .nav-c1-logo {

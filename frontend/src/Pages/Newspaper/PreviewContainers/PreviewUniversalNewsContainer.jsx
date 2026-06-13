@@ -49,6 +49,9 @@ const PreviewUniversalNewsContainer = ({
   const padding         = slot?.dimensions?.padding         ?? 10;
   const version         = slot?.shfval                      ?? 1;
   const showSeparator   = slot?.showSeparator               ?? false;
+  const isSideBySideLayout = [4, 5, 6, 7, 8, 9].includes(version);
+  const mobileImageMaxWidth = Math.max(96, Math.min(imgWidth, 180));
+  const mobilePadding = Math.min(padding, 8);
 
   const newsId = slot?.newsId;
   const newsSource = language === "en" ? translatedNews : allNews;
@@ -86,27 +89,31 @@ const PreviewUniversalNewsContainer = ({
   };
 
   const imageStyle = {
-    width:        isMobile ? "100%" : `${imgWidth}px`,
+    width:        isMobile
+      ? (isSideBySideLayout ? `clamp(96px, 38vw, ${mobileImageMaxWidth}px)` : "100%")
+      : `${imgWidth}px`,
     height:       isMobile ? "auto" : `${imgHeight}px`,
     borderRadius: "5px",
     overflow:     "hidden",
     flexShrink:   0,
     maxWidth:     "100%",
-    aspectRatio:  isMobile && imgWidth && imgHeight ? `${imgWidth}/${imgHeight}` : undefined,
+    aspectRatio:  imgWidth && imgHeight ? `${imgWidth}/${imgHeight}` : undefined,
+    alignSelf:    isMobile && isSideBySideLayout ? "flex-start" : undefined,
   };
 
   const headlineStyle = {
-    fontSize:     "17px",
+    fontSize:     isMobile ? "15px" : "17px",
     fontWeight:   "bold",
+    lineHeight:   1.35,
   };
 
   const contentStyle = {
-    fontSize:     "14px",
-
+    fontSize:     isMobile ? "12px" : "14px",
+    lineHeight:   1.45,
   };
 
   const timeStyle = {
-    fontSize: "12px",
+    fontSize: isMobile ? "10px" : "12px",
     color:    "gray",
   };
 
@@ -133,9 +140,10 @@ const PreviewUniversalNewsContainer = ({
 
   const rowLayout = {
     display: "flex",
-    gap: "15px",
+    gap: isMobile ? "10px" : "15px",
     alignItems: "flex-start",
-    flexDirection: isMobile ? "column" : "row",
+    flexDirection: "row",
+    width: "100%",
   };
 
   const renderLayout = () => {
@@ -263,7 +271,7 @@ const PreviewUniversalNewsContainer = ({
         style={{
           width:      isMobile ? "100%" : (containerWidth  > 0 ? `${containerWidth}px`  : undefined),
           minHeight:  isMobile ? undefined : (containerHeight > 0 ? `${containerHeight}px` : undefined),
-          padding:    `${padding}px`,
+          padding:    `${isMobile ? mobilePadding : padding}px`,
           cursor:     "pointer",
           transition: "0.3s ease-in-out",
           maxWidth:   "100%",

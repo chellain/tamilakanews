@@ -836,6 +836,16 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     !currentNews &&
     shouldResolveRouteBySlug &&
     (routeLoading || !routeLookupFinished);
+  const shouldRedirectHome =
+    !currentNews &&
+    shouldResolveRouteBySlug &&
+    routeLookupFinished &&
+    !routeLoading;
+
+  useEffect(() => {
+    if (!shouldRedirectHome) return;
+    navigate("/", { replace: true });
+  }, [shouldRedirectHome, navigate]);
 
   if ((newsLoading && !currentNews) || showRouteLoader) {
     return (
@@ -844,6 +854,10 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
         <div style={{ ...themeStyle, minHeight: "100vh" }} />
       </>
     );
+  }
+
+  if (shouldRedirectHome) {
+    return <div style={{ ...themeStyle, minHeight: "100vh" }} />;
   }
 
   if (!currentNews) {
@@ -1201,16 +1215,7 @@ function ContainerView({ container, isMobile, fontSizePercent = 100 }) {
             ) : null}
           </div>
         ))
-      ) : (
-        <div style={{ 
-          gridColumn: `span ${responsiveColumns}`, 
-          textAlign: "center", 
-          color: "#999", 
-          padding: "20px" 
-        }}>
-          No content in this container
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
