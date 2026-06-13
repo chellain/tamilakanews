@@ -567,7 +567,7 @@
     display: flex;
     gap: 20px;
     width: 100%;
-    max-width: 700px;
+    max-width: 100%;
     align-items: center;
     justify-content: flex-start;
   }
@@ -628,7 +628,7 @@
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     background-color: #e8098c;
-    padding: 0 4px;
+    padding: 0 0px;
     padding-bottom: 60px;
   }
 
