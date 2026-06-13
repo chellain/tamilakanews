@@ -1201,7 +1201,16 @@ function ContainerView({ container, isMobile, fontSizePercent = 100 }) {
             ) : null}
           </div>
         ))
-      ) : null}
+      ) : (
+        <div style={{ 
+          gridColumn: `span ${responsiveColumns}`, 
+          textAlign: "center", 
+          color: "#999", 
+          padding: "20px" 
+        }}>
+          No content in this container
+        </div>
+      )}
     </div>
   );
 }
