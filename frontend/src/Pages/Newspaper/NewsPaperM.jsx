@@ -11,6 +11,12 @@ import { buildSectionPath, sectionNameFromPath } from "../../utils/paths";
 import { Helmet } from "react-helmet";
 import { useSiteData } from "../../context/SiteDataContext";
 import logo from "../../assets/logo1.png";
+import {
+  ensureTamilFontFaces,
+  getTamilFontFamily,
+} from "../../utils/tamilFonts";
+
+ensureTamilFontFaces();
 
 export default function NewsPaperM() {
   const navigate = useNavigate();
@@ -31,7 +37,7 @@ export default function NewsPaperM() {
     backgroundColor: isOn ? "#141414" : "#ffffff",
     color: isOn ? "#ffffff" : "#141414",
     transition: "all 0.3s ease",
-    fontFamily: "Noto Sans Tamil",
+    fontFamily: getTamilFontFamily(adminConfig?.selectedFont),
   };
 
   // Apply dark/light to entire viewport so left/right margins are never white
@@ -102,7 +108,7 @@ export default function NewsPaperM() {
         {pageUrl && <meta property="og:url" content={pageUrl} />}
         <meta property="og:type" content="website" />
       </Helmet>
-      <div className="main-screen" style={{ ...themeStyle, backgroundColor: "transparent", maxWidth: "1280px", margin: "0 auto", padding: "0 24px" }}>
+      <div className="main-screen" style={{ ...themeStyle, backgroundColor: "transparent" }}>
         <Navbar
           setIsOn={setIsOn}
           isOn={isOn}
@@ -123,7 +129,6 @@ export default function NewsPaperM() {
         
         <div className="np-main-cont-ov">
           <div className="ep-ed-full-cont">
-            <br />
             {/* Render the active page preview from Redux */}
             <PagePreview pageName={activePage} />
           </div>

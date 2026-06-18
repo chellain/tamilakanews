@@ -452,15 +452,22 @@
 
 @media (max-width: 575px) {
   .prepge-main {
-    padding: 0 12px;
+    padding: 0;
   }
 
   .pp-nav-ov {
-    padding: 0 12px;
+    padding: 0;
   }
 
   .Prevpge-main-con1 {
-    padding: 5px 10px 0 5px;
+    padding: 0;
+  }
+
+  .premain-con1-sub,
+  .main-news-cont,
+  .mannsw-ns-header {
+    margin: 0;
+    padding: 0;
   }
 }
 .mannsw-sc-head
@@ -691,6 +698,10 @@
 @media (max-width: 575px) {
   .preview-action-bar {
     gap: 12px;
+  }
+
+  .npmc-c3 {
+    margin: 10px 0;
   }
 }
    .mannsw-ns-header

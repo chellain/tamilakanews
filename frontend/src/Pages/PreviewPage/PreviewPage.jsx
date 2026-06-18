@@ -51,6 +51,12 @@ import {
 import { Helmet } from "react-helmet";
 import JsonLd from "../../Shared/JsonLd";
 import { resolveMediaUrl } from "../../utils/media";
+import {
+  ensureTamilFontFaces,
+  getTamilFontFamily,
+} from "../../utils/tamilFonts";
+
+ensureTamilFontFaces();
 
 const normalizeNewsListResponse = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -92,7 +98,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     backgroundColor: isOn ? "#141414" : "#ffffff",
     color: isOn ? "#ffffff" : "#141414",
     transition: "all 0.3s ease",
-    fontFamily: "Noto Sans Tamil",
+    fontFamily: getTamilFontFamily(adminConfig?.selectedFont),
   };
 
   // Ensure full viewport (including side margins) follows dark/light mode
@@ -914,10 +920,6 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
               <span>News has copied</span>
             </div>
           )}
-          <div>
-            <br />
-          </div>
-
       <div className="Prevpge-main-con1">
         <div className="premain-con1-sub">
           <div className="main-news-cont">

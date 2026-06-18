@@ -44,6 +44,7 @@ export default function PreviewSlider({
   containerId,
   isNested = false,
   parentContainerId = null,
+  isMobile = false,
 }) {
   const containerRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -152,7 +153,9 @@ export default function PreviewSlider({
           backgroundColor: "rgba(33, 150, 243, 0.05)",
           overflow: "hidden",
           position: "relative",
-          width: width > 0 ? `${width}px` : "100%",
+          width: isMobile ? "100%" : (width > 0 ? `${width}px` : "100%"),
+          maxWidth: "100%",
+          minWidth: 0,
         }}
       >
         {headerEnabled && (
@@ -188,6 +191,7 @@ export default function PreviewSlider({
                   key={`${droppedContainers[currentIndex]?.slotId}-${fadeKey}`}
                   style={{
                     animation: "fadeIn 0.5s ease-in-out",
+                    minWidth: 0,
                   }}
                 >
                   <style>
@@ -344,7 +348,9 @@ export default function PreviewSlider({
         borderRadius: "8px",
         overflow: "hidden",
         position: "relative",
-        width: width > 0 ? `${width}px` : "100%",
+        width: isMobile ? "100%" : (width > 0 ? `${width}px` : "100%"),
+        maxWidth: "100%",
+        minWidth: 0,
       }}
     >
       {headerEnabled && (
@@ -371,6 +377,7 @@ export default function PreviewSlider({
           <div
             style={{
               width: "100%",
+              minWidth: 0,
               height: "auto",
     
               position: "relative",
