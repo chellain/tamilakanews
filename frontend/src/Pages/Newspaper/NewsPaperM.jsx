@@ -1,6 +1,6 @@
 import React from "react";
 import Navbar from "./Components/Navbarr";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./newspaper.scss";
 import "./PreviewContainers/previewcont.css";
 import Footer from "./Components/Footer";
@@ -12,6 +12,7 @@ import { Helmet } from "react-helmet";
 import { useSiteData } from "../../context/SiteDataContext";
 import logo from "../../assets/logo1.png";
 import {
+  applyTamilFontToElement,
   ensureTamilFontFaces,
   getTamilFontFamily,
 } from "../../utils/tamilFonts";
@@ -19,6 +20,7 @@ import {
 ensureTamilFontFaces();
 
 export default function NewsPaperM() {
+  const pageRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { section } = useParams();
@@ -81,6 +83,10 @@ export default function NewsPaperM() {
     }
   }, [activePage, location.pathname, navigate]);
 
+  useEffect(() => {
+    return applyTamilFontToElement(pageRef.current, adminConfig?.selectedFont);
+  }, [adminConfig?.selectedFont, activePage]);
+
   const siteName = adminConfig?.siteName || "Tamilaka News";
   const pageLabel =
     activePage === "main" ? "Home" : activePage.replace(/-/g, " ");
@@ -98,7 +104,7 @@ export default function NewsPaperM() {
       : logo;
 
   return (
-    <div style={{ ...themeStyle, width: "100%", minHeight: "100vh", margin: 0, padding: 0 }}>
+    <div ref={pageRef} style={{ ...themeStyle, width: "100%", minHeight: "100vh", margin: 0, padding: 0 }}>
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />

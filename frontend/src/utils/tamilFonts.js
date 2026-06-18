@@ -6,6 +6,9 @@ import font4Url from "../assets/Fonts/font_4.TTF";
 export const DEFAULT_TAMIL_FONT = "default";
 
 const FALLBACK_TAMIL_STACK = `"Noto Sans Tamil", "Latha", "Nirmala UI", sans-serif`;
+const TAMIL_UNICODE_PATTERN = /[\u0B80-\u0BFF]/;
+const LEGACY_APPLIED_ATTR = "data-tamilaka-legacy-font";
+const ORIGINAL_FONT_ATTR = "data-tamilaka-original-font-family";
 
 export const TAMIL_FONT_OPTIONS = [
   {
@@ -75,6 +78,117 @@ export const getTamilLegacyPreviewFamily = (fontId) => {
   return `"${selected.legacyFamily}", ${FALLBACK_TAMIL_STACK}`;
 };
 
+const independentVowels = {
+  அ: "m",
+  ஆ: "M",
+  இ: ",",
+  ஈ: "<",
+  உ: "c",
+  ஊ: "C",
+  எ: "v",
+  ஏ: "V",
+  ஐ: "I",
+  ஒ: "x",
+  ஓ: "X",
+  ஔ: "xs",
+};
+
+const consonants = {
+  க: "f",
+  ங: "q",
+  ச: "r",
+  ஜ: "[",
+  ஞ: "Q",
+  ட: "l",
+  ண: "z",
+  த: "j",
+  ந: "e",
+  ன: "d",
+  ப: "g",
+  ம: "k",
+  ய: "a",
+  ர: "u",
+  ல: "y",
+  வ: "t",
+  ழ: "o",
+  ள: "s",
+  ற: "w",
+  ஷ: "\\",
+  ஸ: "]",
+  ஹ: "`",
+};
+
+const vowelSigns = {
+  "\u0BBE": (base) => `${base}h`,
+  "\u0BBF": (base) => `${base}p`,
+  "\u0BC0": (base) => `${base}P`,
+  "\u0BC1": (base) => `${base}{`,
+  "\u0BC2": (base) => `${base}`,
+  "\u0BC6": (base) => `n${base}`,
+  "\u0BC7": (base) => `N${base}`,
+  "\u0BC8": (base) => `i${base}`,
+  "\u0BCA": (base) => `n${base}h`,
+  "\u0BCB": (base) => `N${base}h`,
+  "\u0BCC": (base) => `n${base}s`,
+};
+
+export const isCustomTamilFont = (fontId) =>
+  normalizeTamilFontId(fontId) !== DEFAULT_TAMIL_FONT;
+
+export const tamilUnicodeToLegacy = (value = "") => {
+  let output = "";
+  const chars = Array.from(String(value));
+
+  for (let index = 0; index < chars.length; index += 1) {
+    const current = chars[index];
+
+    if (independentVowels[current]) {
+      output += independentVowels[current];
+      continue;
+    }
+
+    if (current === "ஃ") {
+      output += "/";
+      continue;
+    }
+
+    if (!consonants[current]) {
+      output += current;
+      continue;
+    }
+
+    const base = consonants[current];
+    const next = chars[index + 1];
+
+    if (next === "\u0BCD") {
+      output += `${base};`;
+      index += 1;
+      continue;
+    }
+
+    if (vowelSigns[next]) {
+      output += vowelSigns[next](base);
+      index += 1;
+      continue;
+    }
+
+    output += base;
+  }
+
+  return output;
+};
+
+export const getTamilTextRenderProps = (fontId, text) => {
+  if (!isCustomTamilFont(fontId) || !TAMIL_UNICODE_PATTERN.test(String(text))) {
+    return { text, style: { fontFamily: getTamilFontFamily(fontId) } };
+  }
+
+  return {
+    text: tamilUnicodeToLegacy(text),
+    style: { fontFamily: getTamilLegacyPreviewFamily(fontId) },
+  };
+};
+
 export const ensureTamilFontFaces = () => {
   if (typeof document === "undefined") return;
   if (document.getElementById("tamilaka-custom-font-faces")) return;
@@ -101,4 +215,99 @@ export const ensureTamilFontFaces = () => {
     .join("\n");
 
   document.head.appendChild(style);
+};
+
+const shouldSkipNode = (node) => {
+  const element = node?.parentElement;
+  if (!element) return true;
+  return Boolean(
+    element.closest(
+      "script, style, textarea, input, select, option, code, pre, [data-tamilaka-font-skip]"
+    )
+  );
+};
+
+const restoreLegacyText = (root) => {
+  if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+
+  while (node) {
+    if (node.__tamilakaOriginalText != null) {
+      node.textContent = node.__tamilakaOriginalText;
+      delete node.__tamilakaOriginalText;
+    }
+    node = walker.nextNode();
+  }
+
+  root.querySelectorAll(`[${LEGACY_APPLIED_ATTR}]`).forEach((element) => {
+    const originalFont = element.getAttribute(ORIGINAL_FONT_ATTR);
+    if (originalFont == null) {
+      element.style.fontFamily = "";
+    } else {
+      element.style.fontFamily = originalFont;
+    }
+    element.removeAttribute(LEGACY_APPLIED_ATTR);
+    element.removeAttribute(ORIGINAL_FONT_ATTR);
+  });
+};
+
+export const applyTamilFontToElement = (root, fontId) => {
+  if (typeof document === "undefined" || !root) return () => {};
+
+  ensureTamilFontFaces();
+  restoreLegacyText(root);
+
+  if (!isCustomTamilFont(fontId)) {
+    return () => {};
+  }
+
+  const legacyFamily = getTamilLegacyPreviewFamily(fontId);
+  let isApplying = false;
+
+  const convertTextNodes = () => {
+    if (isApplying) return;
+    isApplying = true;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+
+    while (node) {
+      if (!shouldSkipNode(node) && TAMIL_UNICODE_PATTERN.test(node.textContent || "")) {
+        if (node.__tamilakaOriginalText == null) {
+          node.__tamilakaOriginalText = node.textContent;
+        }
+
+        node.textContent = tamilUnicodeToLegacy(node.__tamilakaOriginalText);
+
+        const parent = node.parentElement;
+        if (parent && !parent.hasAttribute(LEGACY_APPLIED_ATTR)) {
+          parent.setAttribute(ORIGINAL_FONT_ATTR, parent.style.fontFamily || "");
+          parent.setAttribute(LEGACY_APPLIED_ATTR, "true");
+        }
+        if (parent) parent.style.fontFamily = legacyFamily;
+      }
+
+      node = walker.nextNode();
+    }
+
+    isApplying = false;
+  };
+
+  convertTextNodes();
+
+  const observer = new MutationObserver(() => {
+    window.requestAnimationFrame(convertTextNodes);
+  });
+
+  observer.observe(root, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
+
+  return () => {
+    observer.disconnect();
+    restoreLegacyText(root);
+  };
 };

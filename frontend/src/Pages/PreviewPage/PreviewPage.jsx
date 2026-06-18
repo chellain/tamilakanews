@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 // import luffy from "../../assets/jwt.png";
 import newsimg from "../../assets/jwt.png";
 import { IoSearchSharp, IoSettingsOutline, IoInformationCircleOutline } from "react-icons/io5";
@@ -52,6 +52,7 @@ import { Helmet } from "react-helmet";
 import JsonLd from "../../Shared/JsonLd";
 import { resolveMediaUrl } from "../../utils/media";
 import {
+  applyTamilFontToElement,
   ensureTamilFontFaces,
   getTamilFontFamily,
 } from "../../utils/tamilFonts";
@@ -68,6 +69,7 @@ const normalizeNewsListResponse = (payload) => {
 };
 
 export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
+  const pageRef = useRef(null);
   const { category: categoryParam, slug } = useParams();
   const navigate = useNavigate();
   const {
@@ -122,6 +124,10 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
     if (typeof window === "undefined") return;
     window.localStorage.setItem("tn_theme", isOn ? "dark" : "light");
   }, [isOn]);
+
+  useEffect(() => {
+    return applyTamilFontToElement(pageRef.current, adminConfig?.selectedFont);
+  }, [adminConfig?.selectedFont, language, categoryParam, slug, forcedNewsId]);
 
   const [showCopyToast, setShowCopyToast] = useState(false);
   const shouldResolveRouteBySlug = forcedNewsId == null && !!slug;
@@ -897,7 +903,7 @@ export default function PreviewPage({ forcedNewsId = null, editMode = false }) {
       </Helmet>
       <BrandLoader show={showBrandLoader} fading={brandFading} />
       <ImageLoadProvider canLoad={canLoadImages}>
-        <div className={`prepge-main${isOn ? " dark" : ""}`} style={{ ...themeStyle, minHeight: "100vh" }}>
+        <div ref={pageRef} className={`prepge-main${isOn ? " dark" : ""}`} style={{ ...themeStyle, minHeight: "100vh" }}>
           <div className="pp-nav-ov">
             <Navbarr
               setIsOn={setIsOn}
