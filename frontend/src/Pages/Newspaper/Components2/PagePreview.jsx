@@ -101,7 +101,7 @@ export default function PagePreview({ pageName = "main" }) {
   //   • Lines are hidden (see below).
   const effectiveGridColumns = isMobile ? 1 : pageSettings.gridColumns;
   const effectiveHeight = isMobile ? "auto" : `${pageSettings.height}px`;
-  const effectivePadding = isMobile ? "12px" : `${padding}px`;
+  const effectivePadding = isMobile ? "0px" : `${padding}px`;
   const renderCount = Math.min(visibleCount, containers.length);
   const visibleContainers = containers.slice(0, renderCount);
   const remainingCount = Math.max(0, containers.length - renderCount);
@@ -199,6 +199,7 @@ export default function PagePreview({ pageName = "main" }) {
               overflow: isMobile ? "visible" : "hidden",
               width: "100%",
               maxWidth: "1250px",
+              minWidth: 0,
               margin: "0 auto",
               // Smooth transition when resizing between breakpoints
               transition: "padding 0.2s ease",
@@ -212,6 +213,7 @@ export default function PagePreview({ pageName = "main" }) {
             gridTemplateColumns: `repeat(${effectiveGridColumns}, 1fr)`,
             gap: `${pageSettings.gap}px`,
             width: "100%",
+            minWidth: 0,
             marginBottom: `${pageSettings.gap}px`,
             position: "relative",
             zIndex: 1,
