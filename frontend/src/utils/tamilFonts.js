@@ -18,6 +18,7 @@ export const TAMIL_FONT_OPTIONS = [
     id: "font_1",
     label: "Font 1",
     family: "TamilakaCustomFont1",
+    legacyFamily: "TamilakaLegacyPreviewFont1",
     url: font1Url,
     description: "Custom Tamil font from font_1.ttf.",
   },
@@ -25,6 +26,7 @@ export const TAMIL_FONT_OPTIONS = [
     id: "font_2",
     label: "Font 2",
     family: "TamilakaCustomFont2",
+    legacyFamily: "TamilakaLegacyPreviewFont2",
     url: font2Url,
     description: "Custom Tamil font from font_2.ttf.",
   },
@@ -32,6 +34,7 @@ export const TAMIL_FONT_OPTIONS = [
     id: "font_3",
     label: "Font 3",
     family: "TamilakaCustomFont3",
+    legacyFamily: "TamilakaLegacyPreviewFont3",
     url: font3Url,
     description: "Custom Tamil font from font_3.ttf.",
   },
@@ -39,6 +42,7 @@ export const TAMIL_FONT_OPTIONS = [
     id: "font_4",
     label: "Font 4",
     family: "TamilakaCustomFont4",
+    legacyFamily: "TamilakaLegacyPreviewFont4",
     url: font4Url,
     description: "Custom Tamil font from font_4.ttf.",
   },
@@ -60,6 +64,17 @@ export const getTamilFontFamily = (fontId) => {
   return `"${selected.family}", ${FALLBACK_TAMIL_STACK}`;
 };
 
+export const getTamilLegacyPreviewFamily = (fontId) => {
+  const safeFontId = normalizeTamilFontId(fontId);
+  const selected = TAMIL_FONT_OPTIONS.find((font) => font.id === safeFontId);
+
+  if (!selected?.legacyFamily) {
+    return FALLBACK_TAMIL_STACK;
+  }
+
+  return `"${selected.legacyFamily}", ${FALLBACK_TAMIL_STACK}`;
+};
+
 export const ensureTamilFontFaces = () => {
   if (typeof document === "undefined") return;
   if (document.getElementById("tamilaka-custom-font-faces")) return;
@@ -75,6 +90,12 @@ export const ensureTamilFontFaces = () => {
   src: url("${font.url}") format("truetype");
   font-display: swap;
   unicode-range: U+0B80-0BFF;
+}
+
+@font-face {
+  font-family: "${font.legacyFamily}";
+  src: url("${font.url}") format("truetype");
+  font-display: swap;
 }`
     )
     .join("\n");

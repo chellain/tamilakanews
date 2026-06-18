@@ -264,7 +264,13 @@ const PreviewUniversalNewsContainer = ({
   };
 
   return (
-    <div style={{ position: "relative", width: "100%" }}>
+    <div
+      style={{
+        position: "relative",
+        width: isMobile ? "100%" : "fit-content",
+        maxWidth: isMobile ? "100%" : "none",
+      }}
+    >
       <div
         className="preview-universal-container"
         onClick={handleNavigate}
@@ -274,7 +280,7 @@ const PreviewUniversalNewsContainer = ({
           padding:    `${isMobile ? mobilePadding : padding}px`,
           cursor:     "pointer",
           transition: "0.3s ease-in-out",
-          maxWidth:   "100%",
+          maxWidth:   isMobile ? "100%" : "none",
           boxSizing:  "border-box",
         }}
       >
