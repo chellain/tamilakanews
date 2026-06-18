@@ -140,7 +140,7 @@ export default function PreviewContainer({
             textAlign: "center", 
             padding: "20px" 
           }}>
-            No content
+           
           </div>
         )}
 
