@@ -194,9 +194,9 @@ export default function PagePreview({ pageName = "main" }) {
               minHeight: isMobile ? "auto" : undefined,
               padding: effectivePadding,
               position: "relative",
-              // Keep overflow hidden on desktop to clip absolute-positioned lines.
-              // On mobile use visible so stacked content isn't clipped.
-              overflow: isMobile ? "visible" : "hidden",
+              // Match the editor canvas: author-positioned columns can extend
+              // outside their grid cell on desktop and must remain visible.
+              overflow: "visible",
               width: "100%",
               maxWidth: "1250px",
               minWidth: 0,
@@ -210,7 +210,7 @@ export default function PagePreview({ pageName = "main" }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: `repeat(${effectiveGridColumns}, 1fr)`,
+            gridTemplateColumns: `repeat(${effectiveGridColumns}, minmax(0, 1fr))`,
             gap: `${pageSettings.gap}px`,
             width: "100%",
             minWidth: 0,
