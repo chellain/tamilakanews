@@ -70,6 +70,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
   // All searchable pages (flatten district sub-pages too)
   const allSearchablePages = allPages.filter(p => p.name);
 
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth > 768);
     window.addEventListener("resize", handleResize);
@@ -82,22 +83,17 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
       return;
     }
     const rect = districtDropdownRef.current.getBoundingClientRect();
-    setMenuPortalPosition({ top: rect.bottom + 6, left: rect.left });
+    setMenuPortalPosition({ top: rect.bottom + window.scrollY + 6, left: rect.left + window.scrollX });
   }, [districtDropdownOpen]);
 
   useEffect(() => {
     if (!districtDropdownOpen) return;
-    const handleScrollOrResize = (e) => {
-      if (districtMenuRef.current && e.target instanceof Node && districtMenuRef.current.contains(e.target)) {
-        return;
-      }
+    const handleResize = () => {
       setDistrictDropdownOpen(false);
     };
-    window.addEventListener("scroll", handleScrollOrResize, true);
-    window.addEventListener("resize", handleScrollOrResize);
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("scroll", handleScrollOrResize, true);
-      window.removeEventListener("resize", handleScrollOrResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, [districtDropdownOpen]);
 
@@ -110,8 +106,14 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
         setDistrictDropdownOpen(false);
       }
     };
-    if (districtDropdownOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (districtDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, [districtDropdownOpen]);
 
   useEffect(() => {
@@ -536,7 +538,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
                         onTouchStart={(e) => e.stopPropagation()}
                         onClick={(e) => e.stopPropagation()}
                         style={{
-                          position: "fixed",
+                          position: "absolute",
                           top: menuPortalPosition.top,
                           left: menuPortalPosition.left,
                         }}
