@@ -53,6 +53,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
   const [langPopupOpen, setLangPopupOpen] = useState(false);
 
   const districtDropdownRef = useRef(null);
+  const districtMenuRef = useRef(null);
   const searchInputRef = useRef(null);
   const searchContainerRef = useRef(null);
   const globeRef = useRef(null);
@@ -86,7 +87,12 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
 
   useEffect(() => {
     if (!districtDropdownOpen) return;
-    const handleScrollOrResize = () => setDistrictDropdownOpen(false);
+    const handleScrollOrResize = (e) => {
+      if (districtMenuRef.current && e.target instanceof Node && districtMenuRef.current.contains(e.target)) {
+        return;
+      }
+      setDistrictDropdownOpen(false);
+    };
     window.addEventListener("scroll", handleScrollOrResize, true);
     window.addEventListener("resize", handleScrollOrResize);
     return () => {
@@ -97,9 +103,10 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (districtDropdownRef.current && !districtDropdownRef.current.contains(e.target)) {
-        const menuEl = document.querySelector(".nav-district-menu-portal");
-        if (menuEl && menuEl.contains(e.target)) return;
+      const clickedTrigger = districtDropdownRef.current?.contains(e.target);
+      const clickedMenu = districtMenuRef.current?.contains(e.target);
+
+      if (!clickedTrigger && !clickedMenu) {
         setDistrictDropdownOpen(false);
       }
     };
@@ -523,7 +530,11 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
                     </div>
                     {districtDropdownOpen && menuPortalPosition && ReactDOM.createPortal(
                       <div
+                        ref={districtMenuRef}
                         className={`nav-district-menu nav-district-menu-portal${isOn ? " nav-district-menu-dark" : ""}`}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                         style={{
                           position: "fixed",
                           top: menuPortalPosition.top,
