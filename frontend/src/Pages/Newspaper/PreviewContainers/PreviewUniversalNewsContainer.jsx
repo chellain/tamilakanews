@@ -267,8 +267,8 @@ const PreviewUniversalNewsContainer = ({
     <div
       style={{
         position: "relative",
-        width: isMobile ? "100%" : "fit-content",
-        maxWidth: isMobile ? "100%" : "none",
+        width: "100%",
+        maxWidth: "100%",
       }}
     >
       <div
@@ -280,7 +280,7 @@ const PreviewUniversalNewsContainer = ({
           padding:    `${isMobile ? mobilePadding : padding}px`,
           cursor:     "pointer",
           transition: "0.3s ease-in-out",
-          maxWidth:   isMobile ? "100%" : "none",
+          maxWidth:   "100%",
           boxSizing:  "border-box",
         }}
       >

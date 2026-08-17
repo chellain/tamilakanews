@@ -53,6 +53,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
   const [langPopupOpen, setLangPopupOpen] = useState(false);
 
   const districtDropdownRef = useRef(null);
+  const districtMenuRef = useRef(null);
   const searchInputRef = useRef(null);
   const searchContainerRef = useRef(null);
   const globeRef = useRef(null);
@@ -69,6 +70,7 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
   // All searchable pages (flatten district sub-pages too)
   const allSearchablePages = allPages.filter(p => p.name);
 
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth > 768);
     window.addEventListener("resize", handleResize);
@@ -81,30 +83,37 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
       return;
     }
     const rect = districtDropdownRef.current.getBoundingClientRect();
-    setMenuPortalPosition({ top: rect.bottom + 6, left: rect.left });
+    setMenuPortalPosition({ top: rect.bottom + window.scrollY + 6, left: rect.left + window.scrollX });
   }, [districtDropdownOpen]);
 
   useEffect(() => {
     if (!districtDropdownOpen) return;
-    const handleScrollOrResize = () => setDistrictDropdownOpen(false);
-    window.addEventListener("scroll", handleScrollOrResize, true);
-    window.addEventListener("resize", handleScrollOrResize);
+    const handleResize = () => {
+      setDistrictDropdownOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("scroll", handleScrollOrResize, true);
-      window.removeEventListener("resize", handleScrollOrResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, [districtDropdownOpen]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (districtDropdownRef.current && !districtDropdownRef.current.contains(e.target)) {
-        const menuEl = document.querySelector(".nav-district-menu-portal");
-        if (menuEl && menuEl.contains(e.target)) return;
+      const clickedTrigger = districtDropdownRef.current?.contains(e.target);
+      const clickedMenu = districtMenuRef.current?.contains(e.target);
+
+      if (!clickedTrigger && !clickedMenu) {
         setDistrictDropdownOpen(false);
       }
     };
-    if (districtDropdownOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (districtDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, [districtDropdownOpen]);
 
   useEffect(() => {
@@ -523,9 +532,13 @@ export default function Navbarr({ setIsOn, isOn, openSidebar, activePage, setAct
                     </div>
                     {districtDropdownOpen && menuPortalPosition && ReactDOM.createPortal(
                       <div
+                        ref={districtMenuRef}
                         className={`nav-district-menu nav-district-menu-portal${isOn ? " nav-district-menu-dark" : ""}`}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                         style={{
-                          position: "fixed",
+                          position: "absolute",
                           top: menuPortalPosition.top,
                           left: menuPortalPosition.left,
                         }}

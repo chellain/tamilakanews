@@ -905,3 +905,98 @@
     flex-basis: auto !important;
   }
 }
+
+/* Grid-safe sizing: news cards must never force their grid cell wider. */
+.preview-bg-news-1,
+.preview-bg-news-2,
+.preview-bg-news-3,
+.preview-bg-news-4,
+.preview-bg-news-4a,
+.preview-bg-news5-1,
+.preview-nm-news-1,
+.preview-nm-news-2,
+.preview-nm-news-3,
+.preview-nm-news-4,
+.preview-nm-news-5,
+.preview-nm-news-6,
+.preview-nm-news-7,
+.preview-nm-news-8,
+.preview-nm-news-7a,
+.preview-nm-news-8a,
+.preview-nm-news-4b,
+.ep-nm2-news-2,
+.ep-nm2-news-3,
+.preview-universal-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box;
+}
+
+.preview-bg-news-2,
+.preview-bg-news5-1,
+.preview-nm-news-1-inner,
+.preview-nm-news-2-inner,
+.preview-nm-news-3,
+.preview-nm-news-4,
+.preview-nm-news-5,
+.preview-nm-news-6,
+.preview-nm-news-7,
+.preview-nm-news-8,
+.preview-nm-news-7a,
+.preview-nm-news-8a {
+  min-width: 0;
+}
+
+.preview-nm-news-7,
+.preview-nm-news-8,
+.preview-nm-news-7a,
+.preview-nm-news-8a {
+  flex: 1 1 auto !important;
+}
+
+.preview-epbn1-img,
+.preview-epbn3-img,
+.preview-epbn4-img,
+.preview-epbn4a-img {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.preview-epbn2-img,
+.preview-epbn51-img,
+.preview-epnn1-img,
+.preview-epnn2-img,
+.preview-epnn3-img,
+.preview-epnn4-img,
+.preview-epnn5-img,
+.preview-epnn6-img,
+.preview-epnn7-img,
+.preview-epnn8-img,
+.preview-epnn7a-img,
+.preview-epnn8a-img,
+.epnn22-img {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.preview-epbn2-img,
+.preview-epbn51-img {
+  flex: 1 1 55%;
+}
+
+.preview-epbn2-content,
+.preview-epbn51-content,
+.preview-nm1-sbc,
+.preview-nm2-sbc,
+.preview-nm3-sbc,
+.preview-nm4-sbc,
+.preview-nm5-sbc,
+.preview-nm6-sbc,
+.preview-nm7-sbc,
+.preview-nm8-sbc,
+.preview-nm7a-sbc,
+.preview-nm8a-sbc {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
