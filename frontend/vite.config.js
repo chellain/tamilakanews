@@ -18,6 +18,16 @@ const escapeXml = (value) =>
 const resolveNewsDate = (news) =>
   news?.time || news?.createdAt || news?.updatedAt || null;
 
+const resolveValidTimestamp = (value) => {
+  const timestamp = new Date(value || 0).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+};
+
+const toIsoStringOrEmpty = (value) => {
+  const timestamp = resolveValidTimestamp(value);
+  return timestamp ? new Date(timestamp).toISOString() : "";
+};
+
 const resolveNewsTitle = (news) =>
   news?.data?.headline || news?.dataEn?.headline || news?.title || "News";
 
@@ -103,7 +113,7 @@ const buildArticleHeadTags = ({
   const description = resolveNewsDescription(news);
   const articleUrl = resolveNewsUrl(baseUrl, news);
   const publishedRaw = resolveNewsDate(news);
-  const publishedIso = publishedRaw ? new Date(publishedRaw).toISOString() : "";
+  const publishedIso = toIsoStringOrEmpty(publishedRaw);
   const twitterCard = imageUrl ? "summary_large_image" : "summary";
 
   const tags = [
@@ -164,8 +174,8 @@ const buildNewsSitemapXml = ({
     .map((news) => {
       const title = resolveNewsTitle(news);
       const publishedRaw = resolveNewsDate(news);
-      if (!publishedRaw) return null;
-      const publishedDate = new Date(publishedRaw).toISOString();
+      const publishedDate = toIsoStringOrEmpty(publishedRaw);
+      if (!publishedDate) return null;
       const loc = resolveNewsUrl(baseUrl, news);
       return `
   <url>
@@ -261,7 +271,7 @@ const sitemapPlugin = () => ({
       const apiUrl = resolveApiUrl(baseUrl);
       const newsItems = await fetchNewsItems(apiUrl);
       const latest = newsItems
-        .sort((a, b) => new Date(resolveNewsDate(b) || 0) - new Date(resolveNewsDate(a) || 0))
+        .sort((a, b) => resolveValidTimestamp(resolveNewsDate(b)) - resolveValidTimestamp(resolveNewsDate(a)))
         .slice(0, 100);
       const xml = buildNewsSitemapXml({ baseUrl, items: latest });
       res.statusCode = 200;
@@ -278,7 +288,7 @@ const sitemapPlugin = () => ({
       const apiUrl = resolveApiUrl(baseUrl);
       const newsItems = await fetchNewsItems(apiUrl);
       const latest = newsItems
-        .sort((a, b) => new Date(resolveNewsDate(b) || 0) - new Date(resolveNewsDate(a) || 0))
+        .sort((a, b) => resolveValidTimestamp(resolveNewsDate(b)) - resolveValidTimestamp(resolveNewsDate(a)))
         .slice(0, 100);
       const xml = buildNewsSitemapXml({ baseUrl, items: latest });
       res.statusCode = 200;
@@ -294,7 +304,7 @@ const sitemapPlugin = () => ({
     const apiUrl = resolveApiUrl(siteBaseUrl);
     const newsItems = await fetchNewsItems(apiUrl);
     const latest = newsItems
-      .sort((a, b) => new Date(resolveNewsDate(b) || 0) - new Date(resolveNewsDate(a) || 0))
+      .sort((a, b) => resolveValidTimestamp(resolveNewsDate(b)) - resolveValidTimestamp(resolveNewsDate(a)))
       .slice(0, 100);
     const xml = buildNewsSitemapXml({ baseUrl: siteBaseUrl, items: latest });
     const outDir = path.resolve(process.cwd(), "build");

@@ -96,7 +96,7 @@ const PreviewUniversalNewsContainer = ({
     borderRadius: "5px",
     overflow:     "hidden",
     flexShrink:   0,
-    maxWidth:     "100%",
+    maxWidth:     isMobile ? "100%" : "none",
     aspectRatio:  imgWidth && imgHeight ? `${imgWidth}/${imgHeight}` : undefined,
     alignSelf:    isMobile && isSideBySideLayout ? "flex-start" : undefined,
   };
@@ -267,8 +267,8 @@ const PreviewUniversalNewsContainer = ({
     <div
       style={{
         position: "relative",
-        width: "100%",
-        maxWidth: "100%",
+        width: isMobile ? "100%" : "fit-content",
+        maxWidth: isMobile ? "100%" : "none",
       }}
     >
       <div
@@ -280,7 +280,7 @@ const PreviewUniversalNewsContainer = ({
           padding:    `${isMobile ? mobilePadding : padding}px`,
           cursor:     "pointer",
           transition: "0.3s ease-in-out",
-          maxWidth:   "100%",
+          maxWidth:   isMobile ? "100%" : "none",
           boxSizing:  "border-box",
         }}
       >

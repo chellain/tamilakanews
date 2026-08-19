@@ -100,8 +100,8 @@ export default function PagePreview({ pageName = "main" }) {
   //   • Let height be auto so all stacked containers are visible.
   //   • Lines are hidden (see below).
   const effectiveGridColumns = isMobile ? 1 : pageSettings.gridColumns;
-  const effectiveMinHeight = isMobile ? "auto" : `${pageSettings.height}px`;
-  const effectivePadding = isMobile ? "0px" : `${padding}px`;
+  const effectiveHeight = isMobile ? "auto" : `${pageSettings.height}px`;
+  const effectivePadding = isMobile ? "12px" : `${padding}px`;
   const renderCount = Math.min(visibleCount, containers.length);
   const visibleContainers = containers.slice(0, renderCount);
   const remainingCount = Math.max(0, containers.length - renderCount);
@@ -190,16 +190,15 @@ export default function PagePreview({ pageName = "main" }) {
         <ImageLoadProvider canLoad={canLoadImages}>
           <div
             style={{
-              height: "auto",
-              minHeight: effectiveMinHeight,
+              height: effectiveHeight,
+              minHeight: isMobile ? "auto" : undefined,
               padding: effectivePadding,
               position: "relative",
-              // Match the editor canvas: author-positioned columns can extend
-              // outside their grid cell on desktop and must remain visible.
-              overflow: "visible",
+              // Keep overflow hidden on desktop to clip absolute-positioned lines.
+              // On mobile use visible so stacked content isn't clipped.
+              overflow: isMobile ? "visible" : "hidden",
               width: "100%",
               maxWidth: "1250px",
-              minWidth: 0,
               margin: "0 auto",
               // Smooth transition when resizing between breakpoints
               transition: "padding 0.2s ease",
@@ -210,11 +209,9 @@ export default function PagePreview({ pageName = "main" }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: `repeat(${effectiveGridColumns}, minmax(0, 1fr))`,
-            alignItems: "start",
+            gridTemplateColumns: `repeat(${effectiveGridColumns}, 1fr)`,
             gap: `${pageSettings.gap}px`,
             width: "100%",
-            minWidth: 0,
             marginBottom: `${pageSettings.gap}px`,
             position: "relative",
             zIndex: 1,

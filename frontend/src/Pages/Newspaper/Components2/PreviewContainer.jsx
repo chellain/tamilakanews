@@ -70,6 +70,10 @@ export default function PreviewContainer({
   if (!containerData) return null;
 
   const grid = containerData.grid || { columns: 2, gap: 10 };
+  const rawGridSpan = Number(grid.span || 1);
+  const gridSpan = Number.isFinite(rawGridSpan)
+    ? Math.max(1, Math.min(rawGridSpan, 12))
+    : 1;
   const headerEnabled = containerData.header?.enabled || false;
   const headerTam = containerData.header?.tam ?? containerData.header?.title ?? "";
   const headerEng = containerData.header?.eng ?? "";
@@ -100,9 +104,10 @@ export default function PreviewContainer({
         position: "relative",
         display: "flex",
         flexDirection: "column",
+        gridColumn: isMobile ? undefined : `span ${gridSpan}`,
+        alignSelf: isNested ? undefined : "start",
         // On mobile each container takes full width and sits below the previous
         width: isMobile ? "100%" : undefined,
-        minWidth: 0,
         boxSizing: "border-box",
       }}
     >
@@ -122,7 +127,6 @@ export default function PreviewContainer({
           position: "relative", 
           overflow: "visible", 
           padding: `${effectivePadding}px`, 
-          minWidth: 0,
           // On mobile let height be driven by content; no fixed minimum
           minHeight: isMobile
             ? "auto"
@@ -153,10 +157,9 @@ export default function PreviewContainer({
         <div 
           style={{ 
             display: "grid", 
-            gridTemplateColumns: `repeat(${effectiveColumns}, minmax(0, 1fr))`, 
+            gridTemplateColumns: `repeat(${effectiveColumns}, 1fr)`,
             gap: `${grid.gap}px`, 
             width: "100%",
-            minWidth: 0,
             position: "relative",
           }}
         >
@@ -222,7 +225,6 @@ export default function PreviewContainer({
                   position: "relative",
                   zIndex: 10 + index,
                   width: isMobile ? "100%" : undefined,
-                  minWidth: 0,
                   boxSizing: "border-box",
                 };
 
@@ -308,7 +310,6 @@ export default function PreviewContainer({
                       position: "relative", 
                       zIndex: 10 + index,
                       width: isMobile ? "100%" : undefined,
-                      minWidth: 0,
                       boxSizing: "border-box",
                     }}
                   >
@@ -330,7 +331,6 @@ export default function PreviewContainer({
                       position: "relative",
                       zIndex: 10 + index,
                       width: "100%",
-                      minWidth: 0,
                       height: "fit-content",
                       // Allow horizontal scroll on mobile if slider content
                       // is wider than the viewport
